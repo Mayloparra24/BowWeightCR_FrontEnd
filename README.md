@@ -23,18 +23,12 @@ Antes de empezar, asegúrate de tener instalado:
 
 ## 📦 Instalación y Configuración
 
-1. **Clonar el repositorio:**
-   ```bash
-   git clone <URL_DE_TU_REPOSITORIO>
-   cd mi-app-movil
-   ```
-
-2. **Instalar dependencias del proyecto:**
+1. **Instalar dependencias del proyecto:**
    ```bash
    pnpm install
    ```
 
-3. **Instalar la CLI global de Ionic (Opcional, pero recomendado):**
+2. **Instalar la CLI global de Ionic (Opcional, pero recomendado):**
    ```bash
    npm install -g @ionic/cli
    ```
