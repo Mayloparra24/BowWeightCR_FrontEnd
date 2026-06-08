@@ -1,0 +1,7 @@
+{
+  "name": "BowWeightCR_FrontEnd",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "vue-vite"
+}
