@@ -1,39 +1,99 @@
 import { createRouter, createWebHistory } from '@ionic/vue-router';
 import { RouteRecordRaw } from 'vue-router';
-import TabsPage from '../views/TabsPage.vue'
+import { currentUser, getDefaultRouteForRole } from '@/modules/auth/services/sessionService';
+import type { UserRole } from '@/shared/types/domain';
+
+declare module 'vue-router' {
+  interface RouteMeta {
+    requiresAuth?: boolean;
+    roles?: UserRole[];
+  }
+}
 
 const routes: Array<RouteRecordRaw> = [
   {
     path: '/',
-    redirect: '/tabs/tab1'
+    redirect: '/login',
   },
   {
-    path: '/tabs/',
-    component: TabsPage,
+    path: '/login',
+    name: 'login',
+    component: () => import('@/modules/auth/pages/LoginPage.vue'),
+  },
+  {
+    path: '/app',
+    component: () => import('@/shared/layouts/AppTabsLayout.vue'),
+    meta: {
+      requiresAuth: true,
+    },
     children: [
       {
         path: '',
-        redirect: '/tabs/tab1'
+        redirect: '/app/inicio',
       },
       {
-        path: 'tab1',
-        component: () => import('@/views/Tab1Page.vue')
+        path: 'inicio',
+        name: 'app-home',
+        component: () => import('@/modules/dashboard/pages/HomePage.vue'),
       },
       {
-        path: 'tab2',
-        component: () => import('@/views/Tab2Page.vue')
+        path: 'fincas',
+        name: 'farms',
+        component: () => import('@/modules/fincas/pages/FarmListPage.vue'),
       },
       {
-        path: 'tab3',
-        component: () => import('@/views/Tab3Page.vue')
-      }
-    ]
-  }
-]
+        path: 'bovinos',
+        name: 'animals',
+        component: () => import('@/modules/animales/pages/AnimalListPage.vue'),
+      },
+      {
+        path: 'usuarios',
+        name: 'users',
+        component: () => import('@/modules/admin/pages/UserManagementPage.vue'),
+        meta: {
+          roles: ['admin'],
+        },
+      },
+      {
+        path: 'bitacora',
+        name: 'audit-log',
+        component: () => import('@/modules/admin/pages/AuditLogPage.vue'),
+        meta: {
+          roles: ['admin'],
+        },
+      },
+      {
+        path: 'configuracion',
+        name: 'settings',
+        component: () => import('@/modules/settings/pages/SettingsPage.vue'),
+      },
+    ],
+  },
+];
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
-  routes
-})
+  routes,
+});
 
-export default router
+router.beforeEach((to) => {
+  const user = currentUser.value;
+  const requiresAuth = to.matched.some((route) => route.meta.requiresAuth);
+  const allowedRoles = to.matched.flatMap((route) => route.meta.roles ?? []);
+
+  if (requiresAuth && !user) {
+    return '/login';
+  }
+
+  if (to.name === 'login' && user) {
+    return getDefaultRouteForRole(user.role);
+  }
+
+  if (user && allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
+    return getDefaultRouteForRole(user.role);
+  }
+
+  return true;
+});
+
+export default router;
