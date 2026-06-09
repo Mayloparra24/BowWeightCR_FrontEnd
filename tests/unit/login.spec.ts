@@ -13,6 +13,6 @@ describe('LoginPage.vue', () => {
     const wrapper = mount(LoginPage);
 
     expect(wrapper.text()).toContain('Bienvenido de nuevo');
-    expect(wrapper.text()).toContain('Iniciar Sesion');
+    expect(wrapper.text()).toContain('Iniciar sesión');
   });
 });
