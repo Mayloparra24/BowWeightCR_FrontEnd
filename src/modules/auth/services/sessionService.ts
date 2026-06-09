@@ -51,12 +51,12 @@ export const logout = () => {
 
 export const getDefaultRouteForRole = (role: UserRole) => {
   if (role === 'admin') {
-    return '/app/usuarios';
+    return '/app/inicio';
   }
 
   if (role === 'veterinario') {
-    return '/app/fincas';
+    return '/app/inicio';
   }
 
-  return '/app/bovinos';
+  return '/app/inicio';
 };

@@ -47,9 +47,30 @@ const routes: Array<RouteRecordRaw> = [
         component: () => import('@/modules/animales/pages/AnimalListPage.vue'),
       },
       {
+        path: 'bovinos/:id',
+        name: 'animal-detail',
+        component: () => import('@/modules/animales/pages/AnimalDetailPage.vue'),
+      },
+      {
         path: 'usuarios',
         name: 'users',
         component: () => import('@/modules/admin/pages/UserManagementPage.vue'),
+        meta: {
+          roles: ['admin'],
+        },
+      },
+      {
+        path: 'usuarios/crear',
+        name: 'users-create',
+        component: () => import('@/modules/admin/pages/CreateUserPage.vue'),
+        meta: {
+          roles: ['admin'],
+        },
+      },
+      {
+        path: 'usuarios/:id',
+        name: 'users-detail',
+        component: () => import('@/modules/admin/pages/UserDetailPage.vue'),
         meta: {
           roles: ['admin'],
         },

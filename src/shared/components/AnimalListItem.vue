@@ -5,7 +5,7 @@
     <div class="animal-main">
       <div class="animal-title-row">
         <h2>{{ animal.name }}</h2>
-        <router-link :to="`/app/bovinos`">Ver mas</router-link>
+        <router-link :to="`/app/bovinos/${animal.id}`">Ver mas</router-link>
       </div>
       <p>{{ animal.breed }} · {{ animal.sex }}</p>
       <p class="muted">Arete {{ animal.earTag }}</p>

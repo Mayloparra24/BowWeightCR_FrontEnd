@@ -1,39 +1,39 @@
 <template>
   <ion-page>
-    <ion-header translucent>
-      <ion-toolbar>
-        <ion-title>Lista de Bovinos</ion-title>
-      </ion-toolbar>
-    </ion-header>
-
     <ion-content class="page-surface">
-      <section class="content">
-        <div class="search-row">
-          <label class="search-box">
-            <ion-icon :icon="searchOutline" />
-            <input v-model="search" type="search" placeholder="Buscar bovino..." />
-          </label>
-          <button class="filter-button" type="button" aria-label="Filtrar bovinos">
-            <ion-icon :icon="filterOutline" />
-          </button>
-        </div>
+      <section class="animal-shell">
+        <header class="page-header">
+          <router-link class="back-button" to="/app/inicio" aria-label="Volver al inicio">
+            <ion-icon :icon="chevronBackOutline" />
+          </router-link>
 
-        <h1>Bovinos</h1>
-        <div class="animal-list">
+          <div>
+            <h1>Bovinos</h1>
+            <p>{{ visibleAnimals.length }} disponibles</p>
+          </div>
+        </header>
+
+        <label class="search-box">
+          <ion-icon :icon="searchOutline" />
+          <input v-model="search" type="search" placeholder="Buscar bovino..." />
+        </label>
+
+        <div v-if="visibleAnimals.length" class="animal-list">
           <AnimalListItem v-for="animal in visibleAnimals" :key="animal.id" :animal="animal" />
         </div>
 
-        <p v-if="visibleAnimals.length === 0" class="empty-state">
-          No se encontraron bovinos para esta busqueda.
-        </p>
+        <section v-else class="empty-state">
+          <strong>No hay bovinos disponibles.</strong>
+          <span>Cuando existan bovinos en tus fincas asignadas, apareceran aqui.</span>
+        </section>
       </section>
     </ion-content>
   </ion-page>
 </template>
 
 <script setup lang="ts">
-import { IonContent, IonHeader, IonIcon, IonPage, IonTitle, IonToolbar } from '@ionic/vue';
-import { filterOutline, searchOutline } from 'ionicons/icons';
+import { IonContent, IonIcon, IonPage } from '@ionic/vue';
+import { chevronBackOutline, searchOutline } from 'ionicons/icons';
 import { computed, ref } from 'vue';
 import { currentUser } from '@/modules/auth/services/sessionService';
 import { animals } from '@/shared/data/mockData';
@@ -58,29 +58,67 @@ const visibleAnimals = computed(() => {
 
 <style scoped>
 .page-surface {
-  --background: #ffffff;
+  --background: #f5f8fb;
 }
 
-.content {
-  padding: 20px;
+.page-surface::part(scroll) {
+  display: flex;
+  justify-content: center;
 }
 
-.search-row {
+.animal-shell {
+  width: 100%;
+  max-width: 390px;
+  min-height: 100%;
+  margin: 0 auto;
+  padding: 22px 18px 104px;
+  box-sizing: border-box;
+}
+
+.page-header {
+  position: relative;
   display: grid;
-  grid-template-columns: 1fr 48px;
-  gap: 12px;
-  align-items: center;
+  place-items: center;
+  min-height: 72px;
+  text-align: center;
+}
+
+.back-button {
+  position: absolute;
+  left: 0;
+  top: 19px;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  color: #071832;
+}
+
+h1 {
+  margin: 0;
+  color: #071832;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.page-header p {
+  margin: 4px 0 0;
+  color: #566071;
+  font-size: 11px;
+  font-weight: 800;
 }
 
 .search-box {
-  min-height: 46px;
+  min-height: 44px;
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 0 14px;
-  border: 1px solid #d7dce5;
+  border: 1px solid rgba(8, 37, 74, 0.1);
   border-radius: 8px;
+  background: #ffffff;
   color: #071832;
+  box-shadow: 0 12px 24px rgba(8, 37, 74, 0.06);
 }
 
 .search-box input {
@@ -88,33 +126,38 @@ const visibleAnimals = computed(() => {
   border: 0;
   outline: 0;
   background: transparent;
-}
-
-.filter-button {
-  width: 48px;
-  height: 46px;
-  border: 0;
-  border-radius: 8px;
-  background: #f3f5fa;
-  color: #052b66;
-  font-size: 20px;
-}
-
-h1 {
-  margin: 18px 0 8px;
-  color: #052b66;
-  font-size: 20px;
-  font-weight: 900;
+  color: #071832;
+  font-size: 13px;
 }
 
 .animal-list {
   display: grid;
-  gap: 8px;
+  gap: 10px;
+  margin-top: 18px;
 }
 
 .empty-state {
-  margin-top: 26px;
+  min-height: 260px;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 8px;
+  margin-top: 18px;
+  border: 1px dashed rgba(8, 37, 74, 0.18);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.7);
   color: #566071;
   text-align: center;
+}
+
+.empty-state strong {
+  color: #071832;
+  font-size: 14px;
+}
+
+.empty-state span {
+  max-width: 240px;
+  font-size: 12px;
+  line-height: 1.4;
 }
 </style>

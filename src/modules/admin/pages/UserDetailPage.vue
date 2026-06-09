@@ -1,0 +1,246 @@
+<template>
+  <ion-page>
+    <ion-content class="page-surface">
+      <section class="content">
+        <header class="page-header">
+          <router-link class="back-button" to="/app/usuarios" aria-label="Volver a usuarios">
+            <ion-icon :icon="chevronBackOutline" />
+          </router-link>
+
+          <h1>Detalle de usuario</h1>
+        </header>
+
+        <section v-if="user" class="profile-strip">
+          <div class="avatar">{{ initials }}</div>
+          <div>
+            <h2>{{ user.fullName }}</h2>
+            <p>{{ user.email }}</p>
+            <span class="role-pill">{{ roleLabel(user.role) }}</span>
+          </div>
+        </section>
+
+        <section v-if="user" class="detail-list" aria-label="Informacion del usuario">
+          <article>
+            <h3>Fincas asignadas</h3>
+            <div v-if="user.assignedFarmIds.length" class="chip-row">
+              <span v-for="farmId in user.assignedFarmIds" :key="farmId">{{ farmId }}</span>
+            </div>
+            <p v-else>No hay fincas asignadas.</p>
+          </article>
+
+          <article>
+            <h3>Ultimo inicio de sesion</h3>
+            <p>Sin registros.</p>
+          </article>
+
+          <article>
+            <h3>Cuenta creada</h3>
+            <p>Sin registro.</p>
+          </article>
+
+          <article>
+            <h3>Estado</h3>
+            <span class="status-pill" :class="user.status">{{ user.status }}</span>
+          </article>
+        </section>
+
+        <section v-else class="empty-state">
+          <strong>Usuario no encontrado.</strong>
+          <span>Selecciona un usuario registrado para ver su detalle.</span>
+        </section>
+      </section>
+    </ion-content>
+  </ion-page>
+</template>
+
+<script setup lang="ts">
+import { IonContent, IonIcon, IonPage } from '@ionic/vue';
+import { chevronBackOutline } from 'ionicons/icons';
+import { computed } from 'vue';
+import { useRoute } from 'vue-router';
+import { adminUsers } from '@/modules/admin/data/users';
+import type { UserRole } from '@/shared/types/domain';
+
+const route = useRoute();
+const user = computed(() => adminUsers.find((item) => item.id === route.params.id));
+
+const initials = computed(() => {
+  const name = user.value?.fullName ?? '';
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase();
+});
+
+const roleLabel = (role: UserRole) => {
+  if (role === 'veterinario') {
+    return 'Veterinario';
+  }
+
+  if (role === 'admin') {
+    return 'Admin';
+  }
+
+  return 'Ganadero';
+};
+</script>
+
+<style scoped>
+.page-surface {
+  --background: #ffffff;
+}
+
+.content {
+  width: 100%;
+  max-width: 390px;
+  min-height: 100%;
+  margin: 0 auto;
+  padding: 22px 18px 28px;
+  box-sizing: border-box;
+}
+
+.page-header {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 56px;
+  border-bottom: 1px solid #e4e8ef;
+  text-align: center;
+}
+
+.back-button {
+  position: absolute;
+  left: 0;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  color: #071832;
+}
+
+h1 {
+  margin: 0;
+  color: #071832;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.profile-strip {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+  margin: 28px -18px 0;
+  padding: 22px 28px;
+  background: #d9d9d9;
+  color: #071832;
+}
+
+.avatar {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #052b66;
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+h2 {
+  margin: 0;
+  color: #071832;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.profile-strip p {
+  margin: 2px 0 6px;
+  color: #052b66;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.role-pill,
+.status-pill,
+.chip-row span {
+  display: inline-flex;
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.role-pill,
+.chip-row span {
+  background: #b7d8f0;
+  color: #052b66;
+}
+
+.detail-list {
+  display: grid;
+  gap: 0;
+}
+
+.detail-list article {
+  padding: 22px 0;
+  border-bottom: 1px solid #6e83a6;
+}
+
+h3 {
+  margin: 0 0 14px;
+  color: #052b66;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.detail-list p {
+  margin: 0;
+  color: #052b66;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.status-pill.activo {
+  background: #d8e8f7;
+  color: #052b66;
+  text-transform: capitalize;
+}
+
+.status-pill.inactivo {
+  background: #ff7373;
+  color: #571010;
+  text-transform: capitalize;
+}
+
+.empty-state {
+  min-height: 360px;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 8px;
+  color: #566071;
+  text-align: center;
+}
+
+.empty-state strong {
+  color: #071832;
+  font-size: 15px;
+}
+
+.empty-state span {
+  max-width: 230px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+</style>

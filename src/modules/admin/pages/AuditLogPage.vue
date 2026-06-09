@@ -1,14 +1,17 @@
 <template>
   <ion-page>
-    <ion-header translucent>
-      <ion-toolbar>
-        <ion-title>Bitacora de actividad</ion-title>
-      </ion-toolbar>
-    </ion-header>
-
     <ion-content class="page-surface">
       <section class="content">
-        <p class="subtitle">Registro completo del sistema</p>
+        <header class="page-header">
+          <router-link class="back-button" to="/app/inicio" aria-label="Volver al inicio">
+            <ion-icon :icon="chevronBackOutline" />
+          </router-link>
+
+          <div>
+            <h1>Bitácora de actividad</h1>
+            <p>Registro completo del sistema</p>
+          </div>
+        </header>
 
         <div class="filter-row">
           <button
@@ -22,34 +25,28 @@
           </button>
         </div>
 
-        <div class="log-panel">
+        <section class="log-panel" :class="{ empty: !visibleEvents.length }" aria-label="Eventos del sistema">
           <article v-for="event in visibleEvents" :key="event.id" class="log-row">
             <span>{{ event.message }}</span>
             <time>{{ event.date }}</time>
           </article>
-        </div>
 
-        <p class="notice">Mostrando ultimos 50 eventos · Solo lectura</p>
+          <p v-if="!visibleEvents.length" class="empty-state">No hay eventos registrados.</p>
+        </section>
       </section>
     </ion-content>
   </ion-page>
 </template>
 
 <script setup lang="ts">
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from '@ionic/vue';
+import { IonContent, IonIcon, IonPage } from '@ionic/vue';
+import { chevronBackOutline } from 'ionicons/icons';
 import { computed, ref } from 'vue';
 
 const filters = ['Todos', 'Sesiones', 'Bovinos', 'Usuarios', 'Errores'];
 const selectedFilter = ref('Todos');
 
-const events = [
-  { id: '1', category: 'Sesiones', message: 'MayoParra inicio sesion', date: '17/05 09:34' },
-  { id: '2', category: 'Bovinos', message: 'IvanCh registro bovino El chirriche', date: '17/05 08:51' },
-  { id: '3', category: 'Errores', message: 'Fallo estimacion · imagen invalida', date: '17/05 08:12' },
-  { id: '4', category: 'Bovinos', message: 'IvanCh corrigio peso de Sombra a 530 Kg', date: '16/05 15:20' },
-  { id: '5', category: 'Usuarios', message: 'Admin desactivo cuenta de AMora', date: '16/05 14:10' },
-  { id: '6', category: 'Sesiones', message: 'DrSolano cerro sesion', date: '16/05 14:05' },
-];
+const events: Array<{ id: string; category: string; message: string; date: string }> = [];
 
 const visibleEvents = computed(() => {
   if (selectedFilter.value === 'Todos') {
@@ -66,14 +63,49 @@ const visibleEvents = computed(() => {
 }
 
 .content {
-  padding: 22px 20px;
+  width: 100%;
+  max-width: 390px;
+  min-height: 100%;
+  margin: 0 auto;
+  padding: 22px 18px 28px;
+  box-sizing: border-box;
 }
 
-.subtitle {
-  margin: 0 0 22px;
-  color: #566071;
+.page-header {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 72px;
   text-align: center;
-  font-size: 13px;
+}
+
+.back-button {
+  position: absolute;
+  left: 0;
+  top: 19px;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  color: #071832;
+}
+
+.back-button ion-icon {
+  font-size: 20px;
+}
+
+h1 {
+  margin: 0;
+  color: #071832;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.page-header p {
+  margin: 4px 0 0;
+  color: #566071;
+  font-size: 11px;
+  font-weight: 800;
 }
 
 .filter-row {
@@ -81,6 +113,8 @@ const visibleEvents = computed(() => {
   flex-wrap: wrap;
   justify-content: center;
   gap: 8px;
+  margin: 20px auto 0;
+  max-width: 260px;
 }
 
 .filter-row button {
@@ -88,9 +122,9 @@ const visibleEvents = computed(() => {
   border-radius: 999px;
   background: #a8acb8;
   color: #052b66;
-  font-size: 12px;
-  font-weight: 800;
-  padding: 9px 16px;
+  font-size: 11px;
+  font-weight: 900;
+  padding: 8px 14px;
 }
 
 .filter-row .active {
@@ -99,34 +133,43 @@ const visibleEvents = computed(() => {
 }
 
 .log-panel {
+  min-height: 284px;
   display: grid;
   gap: 14px;
-  min-height: 310px;
-  margin-top: 30px;
-  padding: 28px 12px;
+  align-content: start;
+  margin-top: 28px;
+  padding: 22px 14px;
   border-radius: 8px;
   background: #071832;
   color: #ffffff;
 }
 
+.log-panel.empty {
+  min-height: 284px;
+  place-items: center;
+}
+
 .log-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 8px;
+  gap: 10px;
   align-items: start;
-  font-size: 12px;
+  color: #dbe8f7;
+  font-size: 11px;
+  line-height: 1.35;
 }
 
 time {
-  font-weight: 800;
+  color: #ffffff;
+  font-weight: 900;
+  white-space: nowrap;
 }
 
-.notice {
-  margin-top: 12px;
-  padding: 10px;
-  background: #fff08a;
-  color: #74601d;
+.empty-state {
+  margin: 0;
+  color: #cfe0f5;
+  font-size: 13px;
+  font-weight: 900;
   text-align: center;
-  font-size: 12px;
 }
 </style>

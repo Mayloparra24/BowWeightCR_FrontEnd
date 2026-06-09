@@ -1,19 +1,26 @@
 <template>
   <ion-page>
-    <ion-header translucent>
-      <ion-toolbar>
-        <ion-title>Fincas asignadas</ion-title>
-      </ion-toolbar>
-    </ion-header>
-
     <ion-content class="page-surface">
-      <section class="content">
+      <section class="farm-shell">
+        <header class="page-header">
+          <router-link class="back-button" to="/app/inicio" aria-label="Volver al inicio">
+            <ion-icon :icon="chevronBackOutline" />
+          </router-link>
+
+          <div>
+            <h1 class="page-title">Fincas asignadas</h1>
+            <p>{{ visibleFarms.length }} disponibles</p>
+          </div>
+        </header>
+
+        <p class="info-note">Solo se muestran las fincas asignadas segun el rol del usuario.</p>
+
         <label class="search-box">
           <ion-icon :icon="searchOutline" />
           <input v-model="search" type="search" placeholder="Buscar finca..." />
         </label>
 
-        <div class="farm-list">
+        <div v-if="visibleFarms.length" class="farm-list">
           <article v-for="farm in visibleFarms" :key="farm.id" class="farm-card">
             <div class="pin">
               <ion-icon :icon="locationOutline" />
@@ -22,21 +29,22 @@
               <h2>{{ farm.name }}</h2>
               <p>{{ farm.location }} · {{ farm.cattleCount }} cabezas</p>
             </div>
-            <router-link to="/app/bovinos">Ver bovinos</router-link>
+            <router-link to="/app/bovinos">Ver</router-link>
           </article>
         </div>
 
-        <p class="notice">
-          Solo se muestran las fincas asignadas segun el rol del usuario.
-        </p>
+        <section v-else class="empty-state">
+          <strong>No hay fincas asignadas.</strong>
+          <span>Cuando el administrador asigne fincas, apareceran en esta lista.</span>
+        </section>
       </section>
     </ion-content>
   </ion-page>
 </template>
 
 <script setup lang="ts">
-import { IonContent, IonHeader, IonIcon, IonPage, IonTitle, IonToolbar } from '@ionic/vue';
-import { locationOutline, searchOutline } from 'ionicons/icons';
+import { IonContent, IonIcon, IonPage } from '@ionic/vue';
+import { chevronBackOutline, locationOutline, searchOutline } from 'ionicons/icons';
 import { computed, ref } from 'vue';
 import { currentUser } from '@/modules/auth/services/sessionService';
 import { farms } from '@/shared/data/mockData';
@@ -58,11 +66,70 @@ const visibleFarms = computed(() => {
 
 <style scoped>
 .page-surface {
-  --background: #ffffff;
+  --background: #f5f8fb;
 }
 
-.content {
-  padding: 22px 20px;
+.page-surface::part(scroll) {
+  display: flex;
+  justify-content: center;
+}
+
+.farm-shell {
+  width: 100%;
+  max-width: 390px;
+  min-height: 100%;
+  margin: 0 auto;
+  padding: 22px 18px 104px;
+  box-sizing: border-box;
+}
+
+.page-header {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 72px;
+  text-align: center;
+}
+
+.back-button {
+  position: absolute;
+  left: 0;
+  top: 19px;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  color: #071832;
+}
+
+.back-button ion-icon {
+  font-size: 20px;
+}
+
+.page-title {
+  margin: 0;
+  color: #071832;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.page-header p {
+  margin: 4px 0 0;
+  color: #566071;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.info-note {
+  margin: 8px 0 16px;
+  padding: 11px 12px;
+  border-left: 4px solid #2f75b5;
+  border-radius: 8px;
+  background: #d8e8f7;
+  color: #052b66;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.35;
 }
 
 .search-box {
@@ -72,8 +139,10 @@ const visibleFarms = computed(() => {
   gap: 10px;
   padding: 0 14px;
   border-radius: 8px;
-  background: #d9d9d9;
+  background: #ffffff;
   color: #071832;
+  border: 1px solid rgba(8, 37, 74, 0.1);
+  box-shadow: 0 12px 24px rgba(8, 37, 74, 0.06);
 }
 
 .search-box input {
@@ -82,61 +151,86 @@ const visibleFarms = computed(() => {
   outline: 0;
   background: transparent;
   color: #071832;
+  font-size: 13px;
 }
 
 .farm-list {
   display: grid;
-  gap: 16px;
-  margin-top: 22px;
+  gap: 12px;
+  margin-top: 18px;
 }
 
 .farm-card {
-  min-height: 56px;
+  min-height: 72px;
   display: grid;
-  grid-template-columns: 34px 1fr auto;
-  gap: 10px;
+  grid-template-columns: 38px minmax(0, 1fr) auto;
+  gap: 12px;
   align-items: center;
   padding: 12px;
-  border-radius: 7px;
+  border-radius: 10px;
   background: #052b66;
   color: #ffffff;
+  box-shadow: 0 16px 26px rgba(8, 37, 74, 0.12);
 }
 
 .pin {
-  width: 30px;
-  height: 30px;
+  width: 34px;
+  height: 34px;
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: #cfeaff;
+  background: #d8e8f7;
   color: #052b66;
 }
 
 h2 {
   margin: 0;
+  color: #ffffff;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 900;
 }
 
-p {
+.farm-card p {
   margin: 4px 0 0;
   color: #cfe0f5;
   font-size: 11px;
 }
 
-a {
-  color: #8bb7e5;
+.farm-card a {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: #d8e8f7;
+  color: #052b66;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 900;
   text-decoration: none;
 }
 
-.notice {
-  margin: 34px 0 0;
-  padding: 10px;
-  background: #fff08a;
-  color: #74601d;
+.empty-state {
+  min-height: 260px;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 8px;
+  margin-top: 18px;
+  border: 1px dashed rgba(8, 37, 74, 0.18);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.7);
+  color: #566071;
   text-align: center;
+}
+
+.empty-state strong {
+  color: #071832;
+  font-size: 14px;
+}
+
+.empty-state span {
+  max-width: 240px;
   font-size: 12px;
+  line-height: 1.4;
 }
 </style>
