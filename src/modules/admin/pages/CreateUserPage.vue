@@ -45,15 +45,15 @@
           </label>
 
           <label>
-            <span>Correo electronico</span>
+            <span>Correo electrónico</span>
             <input v-model="email" type="email" placeholder="usuario@bovweight.cr" autocomplete="email" />
           </label>
 
           <label>
-            <span>Contrasena temporal</span>
+            <span>Contraseña temporal</span>
             <div class="password-field">
               <input v-model="temporaryPassword" :type="showPassword ? 'text' : 'password'" readonly />
-              <button type="button" aria-label="Mostrar contrasena" @click="showPassword = !showPassword">
+              <button type="button" aria-label="Mostrar contraseña" @click="showPassword = !showPassword">
                 <ion-icon :icon="eyeOutline" />
               </button>
             </div>
@@ -70,7 +70,7 @@
             </button>
           </div>
 
-          <p class="notice">La contrasena se genera automaticamente y debera cambiarse en el primer inicio de sesion.</p>
+          <p class="notice">La contraseña se genera automáticamente y deberá cambiarse en el primer inicio de sesión.</p>
 
           <div class="actions">
             <router-link class="cancel-button" to="/app/usuarios">Cancelar</router-link>
@@ -81,7 +81,7 @@
           </div>
         </form>
 
-        <section v-else-if="currentStep === 'farms'" class="farms-step">
+        <section v-else-if="currentStep === 'fincas'" class="farms-step">
           <section class="user-summary">
             <div class="summary-avatar">
               <ion-icon :icon="personOutline" />
@@ -95,7 +95,7 @@
 
           <h2>Fincas a asignar</h2>
           <p class="notice compact">
-            El usuario solo podra ver bovinos de las fincas que selecciones aqui.
+            El usuario solo podrá ver bovinos de las fincas que selecciones aquí.
           </p>
 
           <div v-if="availableFarms.length" class="farm-list">
@@ -111,14 +111,14 @@
               </span>
               <span>
                 <strong>{{ farm.name }}</strong>
-                <small>{{ farm.location }} · {{ farm.cattleCount }} cabezas</small>
+                <small>{{ farm.location }} - {{ farm.cattleCount }} cabezas</small>
               </span>
             </button>
           </div>
 
           <div v-else class="empty-panel">
             <strong>No hay fincas registradas.</strong>
-            <span>Podras asignarlas cuando existan fincas creadas en el sistema.</span>
+            <span>Podrás asignarlas cuando existan fincas creadas en el sistema.</span>
           </div>
 
           <div class="selected-row">
@@ -128,7 +128,7 @@
           </div>
 
           <div class="actions">
-            <button class="cancel-button" type="button" @click="currentStep = 'details'">Atras</button>
+            <button class="cancel-button" type="button" @click="currentStep = 'details'">Atrás</button>
             <button class="next-button" type="button" @click="createUser">Crear usuario</button>
           </div>
         </section>
@@ -139,7 +139,7 @@
           </div>
           <h2>Usuario creado</h2>
           <p>
-            Se preparo la cuenta de {{ cleanFullName }} con acceso a {{ selectedFarmIds.length }}
+            Se preparó la cuenta de {{ cleanFullName }} con acceso a {{ selectedFarmIds.length }}
             {{ selectedFarmIds.length === 1 ? 'finca' : 'fincas' }}.
           </p>
 
@@ -176,7 +176,7 @@
             </dl>
           </section>
 
-          <p class="notice compact">Comparte la contrasena temporal por un canal seguro.</p>
+          <p class="notice compact">Comparte la contraseña temporal por un canal seguro.</p>
 
           <router-link class="return-button" to="/app/usuarios">Volver a usuarios</router-link>
         </section>
@@ -199,19 +199,19 @@ import {
   refreshOutline,
 } from 'ionicons/icons';
 import { computed, ref } from 'vue';
-import type { Farm, UserRole } from '@/shared/types/domain';
+import type { Finca, Rol } from '@/shared/types/domain';
 
-type CreateStep = 'details' | 'farms' | 'success';
+type CreateStep = 'details' | 'fincas' | 'success';
 
-const roles: Array<{ label: string; value: Exclude<UserRole, 'admin'>; icon?: string }> = [
+const roles: Array<{ label: string; value: Exclude<Rol, 'admin'>; icon?: string }> = [
   { label: 'Ganadero', value: 'ganadero' },
   { label: 'Veterinario', value: 'veterinario', icon: pulseOutline },
 ];
 
-const availableFarms: Farm[] = [];
+const availableFarms: Finca[] = [];
 
 const currentStep = ref<CreateStep>('details');
-const selectedRole = ref<Exclude<UserRole, 'admin'>>('veterinario');
+const selectedRole = ref<Exclude<Rol, 'admin'>>('veterinario');
 const fullName = ref('');
 const email = ref('');
 const temporaryPassword = ref(generateTemporaryPassword());
@@ -223,15 +223,15 @@ const cleanEmail = computed(() => email.value.trim().toLowerCase());
 const roleLabel = computed(() => (selectedRole.value === 'veterinario' ? 'Veterinario' : 'Ganadero'));
 
 const headerSubtitle = computed(() => {
-  if (currentStep.value === 'farms') {
-    return 'Paso 2 de 2 · Asignar fincas';
+  if (currentStep.value === 'fincas') {
+    return 'Paso 2 de 2 - Asignar fincas';
   }
 
   if (currentStep.value === 'success') {
     return 'Usuario creado exitosamente';
   }
 
-  return 'Paso 1 de 2 · Datos basicos';
+  return 'Paso 1 de 2 - Datos básicos';
 });
 
 const canContinueDetails = computed(() => {
@@ -265,7 +265,7 @@ function goToFarms() {
     return;
   }
 
-  currentStep.value = 'farms';
+  currentStep.value = 'fincas';
 }
 
 function toggleFarm(farmId: string) {

@@ -9,7 +9,7 @@
 
           <div>
             <h1>Gestión de usuarios</h1>
-            <p>{{ users.length }} registrados · {{ activeCount }} activos · {{ inactiveCount }} inactivos</p>
+            <p>{{ users.length }} registrados - {{ activeCount }} activos - {{ inactiveCount }} inactivos</p>
           </div>
         </header>
 
@@ -67,10 +67,10 @@
 import { IonContent, IonIcon, IonPage } from '@ionic/vue';
 import { chevronBackOutline, personAddOutline, searchOutline } from 'ionicons/icons';
 import { computed, ref } from 'vue';
-import { adminUsers } from '@/modules/admin/data/users';
-import type { UserRole } from '@/shared/types/domain';
+import { usuariosAdmin } from '@/modules/admin/data/users';
+import type { Rol } from '@/shared/types/domain';
 
-const users = adminUsers;
+const users = usuariosAdmin;
 const search = ref('');
 const selectedFilter = ref('Todos');
 const filters = ['Todos', 'Ganaderos', 'Veterinarios', 'Inactivos'];
@@ -78,7 +78,7 @@ const filters = ['Todos', 'Ganaderos', 'Veterinarios', 'Inactivos'];
 const activeCount = computed(() => users.filter((user) => user.status === 'activo').length);
 const inactiveCount = computed(() => users.filter((user) => user.status === 'inactivo').length);
 
-const roleLabel = (role: UserRole) => {
+const roleLabel = (role: Rol) => {
   if (role === 'admin') {
     return 'Admin';
   }

@@ -19,17 +19,17 @@
           </div>
         </section>
 
-        <section v-if="user" class="detail-list" aria-label="Informacion del usuario">
+        <section v-if="user" class="detail-list" aria-label="Información del usuario">
           <article>
             <h3>Fincas asignadas</h3>
-            <div v-if="user.assignedFarmIds.length" class="chip-row">
-              <span v-for="farmId in user.assignedFarmIds" :key="farmId">{{ farmId }}</span>
+            <div v-if="assignedFarmNames.length" class="chip-row">
+              <span v-for="farmName in assignedFarmNames" :key="farmName">{{ farmName }}</span>
             </div>
             <p v-else>No hay fincas asignadas.</p>
           </article>
 
           <article>
-            <h3>Ultimo inicio de sesion</h3>
+            <h3>Último inicio de sesión</h3>
             <p>Sin registros.</p>
           </article>
 
@@ -58,11 +58,22 @@ import { IonContent, IonIcon, IonPage } from '@ionic/vue';
 import { chevronBackOutline } from 'ionicons/icons';
 import { computed } from 'vue';
 import { useRoute } from 'vue-router';
-import { adminUsers } from '@/modules/admin/data/users';
-import type { UserRole } from '@/shared/types/domain';
+import { usuariosAdmin } from '@/modules/admin/data/users';
+import { fincas } from '@/shared/data/mockData';
+import type { Rol } from '@/shared/types/domain';
 
 const route = useRoute();
-const user = computed(() => adminUsers.find((item) => item.id === route.params.id));
+const user = computed(() => usuariosAdmin.find((item) => item.id === route.params.id));
+
+const assignedFarmNames = computed(() => {
+  if (!user.value) {
+    return [];
+  }
+
+  return user.value.assignedFarmIds.map((farmId) => {
+    return fincas.find((finca) => finca.id === farmId)?.name ?? farmId;
+  });
+});
 
 const initials = computed(() => {
   const name = user.value?.fullName ?? '';
@@ -75,7 +86,7 @@ const initials = computed(() => {
     .toUpperCase();
 });
 
-const roleLabel = (role: UserRole) => {
+const roleLabel = (role: Rol) => {
   if (role === 'veterinario') {
     return 'Veterinario';
   }

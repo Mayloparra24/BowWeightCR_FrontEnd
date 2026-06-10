@@ -39,7 +39,7 @@ const navItems = computed(() => {
     return [
       { tab: 'inicio', href: '/app/inicio', label: 'Inicio', icon: home },
       { tab: 'usuarios', href: '/app/usuarios', label: 'Usuarios', icon: personOutline },
-      { tab: 'bitacora', href: '/app/bitacora', label: 'Bitacora', icon: listOutline },
+      { tab: 'bitacora', href: '/app/bitacora', label: 'Bitácora', icon: listOutline },
       { tab: 'configuracion', href: '/app/configuracion', label: 'Config.', icon: cogOutline },
     ];
   }
@@ -69,7 +69,7 @@ ion-tab-bar {
   bottom: 0;
   width: 100%;
   height: 72px;
-  padding: 0 20px;
+  padding: 0;
   border-top: 1px solid rgba(8, 37, 74, 0.08);
   border-radius: 0;
   background: rgba(255, 255, 255, 0.98);
@@ -78,6 +78,8 @@ ion-tab-bar {
 }
 
 ion-tab-button {
+  flex: 1 1 0;
+  min-width: 0;
   --color: #8a93a3;
   --color-selected: #052b66;
   --background: transparent;

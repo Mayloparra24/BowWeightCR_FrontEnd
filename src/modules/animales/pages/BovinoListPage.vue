@@ -9,7 +9,7 @@
 
           <div>
             <h1>Bovinos</h1>
-            <p>{{ visibleAnimals.length }} disponibles</p>
+            <p>{{ bovinosVisibles.length }} disponibles</p>
           </div>
         </header>
 
@@ -18,13 +18,13 @@
           <input v-model="search" type="search" placeholder="Buscar bovino..." />
         </label>
 
-        <div v-if="visibleAnimals.length" class="animal-list">
-          <AnimalListItem v-for="animal in visibleAnimals" :key="animal.id" :animal="animal" />
+        <div v-if="bovinosVisibles.length" class="animal-list">
+          <BovinoListItem v-for="bovino in bovinosVisibles" :key="bovino.id" :bovino="bovino" />
         </div>
 
         <section v-else class="empty-state">
           <strong>No hay bovinos disponibles.</strong>
-          <span>Cuando existan bovinos en tus fincas asignadas, apareceran aqui.</span>
+          <span>Cuando existan bovinos en tus fincas asignadas, aparecerán aquí.</span>
         </section>
       </section>
     </ion-content>
@@ -36,20 +36,20 @@ import { IonContent, IonIcon, IonPage } from '@ionic/vue';
 import { chevronBackOutline, searchOutline } from 'ionicons/icons';
 import { computed, ref } from 'vue';
 import { currentUser } from '@/modules/auth/services/sessionService';
-import { animals } from '@/shared/data/mockData';
-import AnimalListItem from '@/shared/components/AnimalListItem.vue';
+import { bovinos } from '@/shared/data/mockData';
+import BovinoListItem from '@/shared/components/BovinoListItem.vue';
 
 const search = ref('');
 
-const visibleAnimals = computed(() => {
+const bovinosVisibles = computed(() => {
   const assignedFarmIds = currentUser.value?.assignedFarmIds ?? [];
   const normalizedSearch = search.value.trim().toLowerCase();
 
-  return animals.filter((animal) => {
-    const canSeeFarm = assignedFarmIds.includes(animal.farmId);
+  return bovinos.filter((bovino) => {
+    const canSeeFarm = assignedFarmIds.includes(bovino.farmId);
     const matchesSearch =
-      animal.name.toLowerCase().includes(normalizedSearch) ||
-      animal.earTag.includes(normalizedSearch);
+      bovino.name.toLowerCase().includes(normalizedSearch) ||
+      bovino.earTag.includes(normalizedSearch);
 
     return canSeeFarm && matchesSearch;
   });

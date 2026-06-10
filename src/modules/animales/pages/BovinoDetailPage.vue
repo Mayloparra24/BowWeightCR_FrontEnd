@@ -10,23 +10,23 @@
           <h1>Perfil del bovino</h1>
         </header>
 
-        <template v-if="animal">
+        <template v-if="bovino">
           <section class="profile-card">
-            <img :src="animal.photoUrl" :alt="`Foto de ${animal.name}`" />
+            <img :src="bovino.photoUrl" :alt="`Foto de ${bovino.name}`" />
             <div>
-              <h2>{{ animal.name }}</h2>
-              <p>{{ animal.breed }} · {{ animal.sex }} · Arete</p>
-              <small>{{ animal.earTag }}</small>
+              <h2>{{ bovino.name }}</h2>
+              <p>{{ bovino.breed }} - {{ bovino.sex }} - Arete</p>
+              <small>{{ bovino.earTag }}</small>
             </div>
-            <span>{{ animal.status }}</span>
+            <span>{{ bovino.status }}</span>
           </section>
 
           <section class="chart-section">
             <h2>
               <ion-icon :icon="analyticsOutline" />
-              Evolucion de peso
+              Evolución de peso
             </h2>
-            <div class="weight-chart" aria-label="Grafico de evolucion de peso">
+            <div class="weight-chart" aria-label="Gráfico de evolución de peso">
               <span
                 v-for="record in orderedRecords"
                 :key="record.id"
@@ -54,7 +54,7 @@
             <p v-else class="empty-note">No hay pesos registrados para este bovino.</p>
           </section>
 
-          <p class="info-note">Solo lectura · No se pueden editar pesos desde este perfil.</p>
+          <p class="info-note">Solo lectura - No se pueden editar pesos desde este perfil.</p>
         </template>
 
         <section v-else class="empty-state">
@@ -72,23 +72,23 @@ import { analyticsOutline, chevronBackOutline } from 'ionicons/icons';
 import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { currentUser } from '@/modules/auth/services/sessionService';
-import { animals, weightRecords } from '@/shared/data/mockData';
+import { bovinos, registrosPeso } from '@/shared/data/mockData';
 
 const route = useRoute();
 const assignedFarmIds = computed(() => currentUser.value?.assignedFarmIds ?? []);
 
-const animal = computed(() => {
-  return animals.find((item) => {
+const bovino = computed(() => {
+  return bovinos.find((item) => {
     return item.id === route.params.id && assignedFarmIds.value.includes(item.farmId);
   });
 });
 
 const orderedRecords = computed(() => {
-  if (!animal.value) {
+  if (!bovino.value) {
     return [];
   }
 
-  return weightRecords.filter((record) => record.animalId === animal.value?.id);
+  return registrosPeso.filter((record) => record.bovinoId === bovino.value?.id);
 });
 
 const maxWeight = computed(() => Math.max(...orderedRecords.value.map((record) => record.weightKg), 1));

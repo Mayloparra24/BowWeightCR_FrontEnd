@@ -13,7 +13,7 @@
               <ion-icon :icon="notificationsOutline" />
             </button>
             <div v-if="!isAdmin" class="user-avatar">{{ userInitials }}</div>
-            <router-link v-if="isAdmin" to="/app/configuracion" aria-label="Configuracion">
+            <router-link v-if="isAdmin" to="/app/configuracion" aria-label="Configuración">
               <ion-icon :icon="settingsOutline" />
             </router-link>
           </div>
@@ -29,13 +29,13 @@
 
             <router-link class="metric-card farms" to="/app/fincas">
               <span>Fincas</span>
-              <strong>{{ adminStats.farms }}</strong>
+              <strong>{{ adminStats.fincas }}</strong>
               <small>En sistema</small>
             </router-link>
 
             <router-link class="metric-card cattle" to="/app/bovinos">
               <span>Bovinos</span>
-              <strong>{{ adminStats.cattle }}</strong>
+              <strong>{{ adminStats.bovinos }}</strong>
               <small>Activos</small>
             </router-link>
 
@@ -53,8 +53,8 @@
 
           <section class="events-section">
             <div class="section-heading">
-              <h2>Ultimos eventos</h2>
-              <router-link to="/app/bitacora">Ver Bitacora</router-link>
+              <h2>Últimos eventos</h2>
+              <router-link to="/app/bitacora">Ver Bitácora</router-link>
             </div>
             <p class="empty-state dark">Sin eventos registrados.</p>
           </section>
@@ -65,13 +65,13 @@
 
           <section class="vet-metrics" aria-label="Resumen veterinario">
             <router-link class="vet-card primary" to="/app/fincas">
-              <strong>{{ vetStats.farms }}</strong>
+              <strong>{{ vetStats.fincas }}</strong>
               <span>Fincas asignadas</span>
               <small>{{ assignedFarmNames }}</small>
             </router-link>
 
             <router-link class="vet-card secondary" to="/app/bovinos">
-              <strong>{{ vetStats.cattle }}</strong>
+              <strong>{{ vetStats.bovinos }}</strong>
               <span>Bovinos asignados</span>
               <small>En fincas asignadas</small>
             </router-link>
@@ -83,19 +83,19 @@
               <router-link to="/app/bovinos">Ver historial</router-link>
             </div>
 
-            <div v-if="recentAnimals.length" class="animal-feed">
+            <div v-if="bovinosRecientes.length" class="animal-feed">
               <router-link
-                v-for="animal in recentAnimals"
-                :key="animal.id"
+                v-for="bovino in bovinosRecientes"
+                :key="bovino.id"
                 class="animal-row"
                 to="/app/bovinos"
               >
-                <img :src="animal.photoUrl" alt="" />
+                <img :src="bovino.photoUrl" alt="" />
                 <span>
-                  <strong>{{ animal.name }}</strong>
-                  <small>Finca<br />{{ farmName(animal.farmId) }}</small>
+                  <strong>{{ bovino.name }}</strong>
+                  <small>Finca<br />{{ farmName(bovino.farmId) }}</small>
                 </span>
-                <b>{{ animal.lastWeightKg }} <small>Kg</small></b>
+                <b>{{ bovino.lastWeightKg }} <small>Kg</small></b>
               </router-link>
             </div>
 
@@ -105,7 +105,7 @@
 
         <section v-else class="farmer-home">
           <router-link class="photo-card" to="/app/bovinos">
-            <span>Nuevo calculo</span>
+            <span>Nuevo cálculo</span>
             <strong>Tomar foto</strong>
             <small>Calcula el peso utilizando IA</small>
             <ion-icon :icon="cameraOutline" />
@@ -117,7 +117,7 @@
             <router-link class="farmer-card inventory" to="/app/bovinos">
               <ion-icon :icon="cubeOutline" />
               <span>Inventario</span>
-              <strong>{{ farmerStats.cattle }}</strong>
+              <strong>{{ farmerStats.bovinos }}</strong>
               <small>Cabezas de ganado registradas</small>
             </router-link>
 
@@ -131,23 +131,23 @@
 
           <section class="activity-section">
             <div class="activity-heading">
-              <h1>Ultimos pesajes</h1>
+              <h1>Últimos pesajes</h1>
               <router-link to="/app/bovinos">Ver historial</router-link>
             </div>
 
-            <div v-if="recentAnimals.length" class="animal-feed">
+            <div v-if="bovinosRecientes.length" class="animal-feed">
               <router-link
-                v-for="animal in recentAnimals"
-                :key="animal.id"
+                v-for="bovino in bovinosRecientes"
+                :key="bovino.id"
                 class="animal-row"
-                :to="`/app/bovinos/${animal.id}`"
+                :to="`/app/bovinos/${bovino.id}`"
               >
-                <img :src="animal.photoUrl" alt="" />
+                <img :src="bovino.photoUrl" alt="" />
                 <span>
-                  <strong>{{ animal.name }}</strong>
-                  <small>{{ animal.lastWeightDate }}<br />{{ farmName(animal.farmId) }}</small>
+                  <strong>{{ bovino.name }}</strong>
+                  <small>{{ bovino.lastWeightDate }}<br />{{ farmName(bovino.farmId) }}</small>
                 </span>
-                <b>{{ animal.lastWeightKg }} <small>Kg</small></b>
+                <b>{{ bovino.lastWeightKg }} <small>Kg</small></b>
               </router-link>
             </div>
 
@@ -170,7 +170,7 @@ import {
 } from 'ionicons/icons';
 import { computed } from 'vue';
 import { currentUser } from '@/modules/auth/services/sessionService';
-import { animals, farms } from '@/shared/data/mockData';
+import { bovinos, fincas } from '@/shared/data/mockData';
 
 const userName = computed(() => currentUser.value?.fullName ?? 'Usuario');
 const isAdmin = computed(() => currentUser.value?.role === 'admin');
@@ -205,45 +205,45 @@ const userInitials = computed(() => {
 
 const adminStats = computed(() => ({
   users: 0,
-  farms: 0,
-  cattle: 0,
+  fincas: 0,
+  bovinos: 0,
   estimates: 0,
 }));
 
 const assignedFarmIds = computed(() => currentUser.value?.assignedFarmIds ?? []);
-const assignedFarms = computed(() => farms.filter((farm) => assignedFarmIds.value.includes(farm.id)));
-const assignedAnimals = computed(() => animals.filter((animal) => assignedFarmIds.value.includes(animal.farmId)));
-const recentAnimals = computed(() => assignedAnimals.value.slice(0, 2));
+const fincasAsignadas = computed(() => fincas.filter((finca) => assignedFarmIds.value.includes(finca.id)));
+const bovinosAsignados = computed(() => bovinos.filter((bovino) => assignedFarmIds.value.includes(bovino.farmId)));
+const bovinosRecientes = computed(() => bovinosAsignados.value.slice(0, 2));
 
 const vetStats = computed(() => ({
-  farms: assignedFarms.value.length,
-  cattle: assignedAnimals.value.length,
+  fincas: fincasAsignadas.value.length,
+  bovinos: bovinosAsignados.value.length,
 }));
 
 const farmerStats = computed(() => ({
-  farms: assignedFarms.value.length,
-  cattle: assignedAnimals.value.length,
+  fincas: fincasAsignadas.value.length,
+  bovinos: bovinosAsignados.value.length,
 }));
 
 const averageWeight = computed(() => {
-  if (!assignedAnimals.value.length) {
+  if (!bovinosAsignados.value.length) {
     return 0;
   }
 
-  const total = assignedAnimals.value.reduce((sum, animal) => sum + animal.lastWeightKg, 0);
-  return Math.round(total / assignedAnimals.value.length);
+  const total = bovinosAsignados.value.reduce((sum, bovino) => sum + bovino.lastWeightKg, 0);
+  return Math.round(total / bovinosAsignados.value.length);
 });
 
 const assignedFarmNames = computed(() => {
-  if (!assignedFarms.value.length) {
+  if (!fincasAsignadas.value.length) {
     return 'Sin fincas asignadas';
   }
 
-  return assignedFarms.value.map((farm) => farm.name).join(' - ');
+  return fincasAsignadas.value.map((finca) => finca.name).join(' - ');
 });
 
 const farmName = (farmId: string) => {
-  return farms.find((farm) => farm.id === farmId)?.name ?? 'Sin finca';
+  return fincas.find((finca) => finca.id === farmId)?.name ?? 'Sin finca';
 };
 </script>
 
