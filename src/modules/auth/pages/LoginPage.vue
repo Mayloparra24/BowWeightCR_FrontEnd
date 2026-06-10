@@ -470,34 +470,115 @@ const handleLogin = async () => {
 @media (max-width: 430px) {
   .login-shell {
     align-items: stretch;
-    padding: 16px 12px;
+    min-height: auto;
+    padding: 10px 10px 14px;
   }
 
   .login-card {
     max-width: none;
     min-height: auto;
-    border-radius: 28px;
+    border-radius: 22px;
     box-shadow: 0 24px 58px rgba(3, 14, 28, 0.26);
+  }
+
+  .brand-hero {
+    padding: 16px 18px 12px;
+  }
+
+  .brand-block {
+    gap: 7px;
+  }
+
+  .logo-badge {
+    width: 86px;
+    height: 72px;
+    border-radius: 22px;
+    padding: 5px 8px;
+  }
+
+  .brand-copy p {
+    font-size: 22px;
+  }
+
+  .brand-copy small {
+    margin-top: 3px;
+    font-size: 11px;
+  }
+
+  .login-panel {
+    padding-top: 18px;
+  }
+
+  .login-panel::before {
+    background-position: center 28%;
+    opacity: 0.42;
+  }
+
+  .login-form {
+    padding: 0 24px;
+  }
+
+  .field-group {
+    margin-bottom: 10px;
+  }
+
+  .field-group label {
+    margin-bottom: 6px;
+    font-size: 11px;
+  }
+
+  .input-shell {
+    min-height: 42px;
+    border-radius: 10px;
+  }
+
+  .login-form ion-input {
+    min-height: 40px;
+    font-size: 12px;
+  }
+
+  .field-icon {
+    margin-left: 12px;
+    font-size: 17px;
+  }
+
+  .password-toggle {
+    width: 38px;
+    height: 40px;
+  }
+
+  .forgot-button {
+    margin: -2px 0 12px auto;
+    font-size: 11px;
+  }
+
+  .login-button {
+    min-height: 43px;
+  }
+
+  .support-text {
+    margin: 18px 24px 20px;
+    font-size: 11px;
   }
 }
 
 @media (max-height: 760px) {
   .brand-hero {
-    padding-top: 18px;
-    padding-bottom: 14px;
+    padding-top: 14px;
+    padding-bottom: 10px;
   }
 
   .logo-badge {
-    width: 108px;
-    height: 88px;
+    width: 82px;
+    height: 68px;
   }
 
   .brand-copy p {
-    font-size: 25px;
+    font-size: 21px;
   }
 
   .login-panel {
-    padding-top: 24px;
+    padding-top: 16px;
   }
 }
 </style>

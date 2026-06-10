@@ -1,22 +1,22 @@
-export type UserRole = 'ganadero' | 'veterinario' | 'admin';
+export type Rol = 'ganadero' | 'veterinario' | 'admin';
 
-export interface User {
+export interface Usuario {
   id: string;
   fullName: string;
   email: string;
-  role: UserRole;
+  role: Rol;
   status: 'activo' | 'inactivo';
   assignedFarmIds: string[];
 }
 
-export interface Farm {
+export interface Finca {
   id: string;
   name: string;
   location: string;
   cattleCount: number;
 }
 
-export interface Animal {
+export interface Bovino {
   id: string;
   farmId: string;
   name: string;
@@ -29,9 +29,9 @@ export interface Animal {
   lastWeightDate: string;
 }
 
-export interface WeightRecord {
+export interface RegistroPeso {
   id: string;
-  animalId: string;
+  bovinoId: string;
   date: string;
   weightKg: number;
   source: 'IA' | 'Manual' | 'Bascula';

@@ -1,6 +1,6 @@
-import type { Animal, Farm, User, WeightRecord } from '@/shared/types/domain';
+import type { Bovino, Finca, RegistroPeso, Usuario } from '@/shared/types/domain';
 
-export const demoUsers: User[] = [
+export const usuariosDemo: Usuario[] = [
   {
     id: 'user-admin',
     fullName: 'Mayo Parra',
@@ -27,7 +27,7 @@ export const demoUsers: User[] = [
   },
 ];
 
-export const farms: Farm[] = [
+export const fincas: Finca[] = [
   {
     id: 'farm-esperanza',
     name: 'La Esperanza',
@@ -48,9 +48,9 @@ export const farms: Farm[] = [
   },
 ];
 
-export const animals: Animal[] = [
+export const bovinos: Bovino[] = [
   {
-    id: 'animal-chirriche',
+    id: 'bovino-chirriche',
     farmId: 'farm-esperanza',
     name: 'El chirriche',
     earTag: '188012340056789',
@@ -62,7 +62,7 @@ export const animals: Animal[] = [
     lastWeightDate: '27/12/2024',
   },
   {
-    id: 'animal-sombra',
+    id: 'bovino-sombra',
     farmId: 'farm-esperanza',
     name: 'Sombra',
     earTag: '188012340056790',
@@ -74,7 +74,7 @@ export const animals: Animal[] = [
     lastWeightDate: '10/09/2024',
   },
   {
-    id: 'animal-ziggy',
+    id: 'bovino-ziggy',
     farmId: 'farm-palmas',
     name: 'Ziggy',
     earTag: '188012340056791',
@@ -87,24 +87,24 @@ export const animals: Animal[] = [
   },
 ];
 
-export const weightRecords: WeightRecord[] = [
+export const registrosPeso: RegistroPeso[] = [
   {
     id: 'weight-1',
-    animalId: 'animal-chirriche',
+    bovinoId: 'bovino-chirriche',
     date: '27/12/2024',
     weightKg: 450,
     source: 'IA',
   },
   {
     id: 'weight-2',
-    animalId: 'animal-chirriche',
+    bovinoId: 'bovino-chirriche',
     date: '10/09/2024',
     weightKg: 420,
     source: 'Manual',
   },
   {
     id: 'weight-3',
-    animalId: 'animal-chirriche',
+    bovinoId: 'bovino-chirriche',
     date: '03/06/2024',
     weightKg: 385,
     source: 'IA',

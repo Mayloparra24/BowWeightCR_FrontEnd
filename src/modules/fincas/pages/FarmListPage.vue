@@ -8,12 +8,12 @@
           </router-link>
 
           <div>
-            <h1 class="page-title">Fincas asignadas</h1>
-            <p>{{ visibleFarms.length }} disponibles</p>
+            <h1 class="page-title">{{ pageTitle }}</h1>
+            <p>{{ visibleFarms.length }} {{ visibleFarms.length === 1 ? 'registrada' : 'registradas' }}</p>
           </div>
         </header>
 
-        <p class="info-note">Solo se muestran las fincas asignadas segun el rol del usuario.</p>
+        <p class="info-note">{{ infoText }}</p>
 
         <label class="search-box">
           <ion-icon :icon="searchOutline" />
@@ -27,15 +27,15 @@
             </div>
             <div>
               <h2>{{ farm.name }}</h2>
-              <p>{{ farm.location }} · {{ farm.cattleCount }} cabezas</p>
+              <p>{{ farm.location }} - {{ farm.cattleCount }} cabezas</p>
             </div>
             <router-link to="/app/bovinos">Ver</router-link>
           </article>
         </div>
 
         <section v-else class="empty-state">
-          <strong>No hay fincas asignadas.</strong>
-          <span>Cuando el administrador asigne fincas, apareceran en esta lista.</span>
+          <strong>{{ emptyTitle }}</strong>
+          <span>{{ emptyText }}</span>
         </section>
       </section>
     </ion-content>
@@ -47,17 +47,38 @@ import { IonContent, IonIcon, IonPage } from '@ionic/vue';
 import { chevronBackOutline, locationOutline, searchOutline } from 'ionicons/icons';
 import { computed, ref } from 'vue';
 import { currentUser } from '@/modules/auth/services/sessionService';
-import { farms } from '@/shared/data/mockData';
+import { fincas } from '@/shared/data/mockData';
 
 const search = ref('');
+const isFarmer = computed(() => currentUser.value?.role === 'ganadero');
+
+const pageTitle = computed(() => (isFarmer.value ? 'Mis fincas' : 'Fincas asignadas'));
+
+const infoText = computed(() => {
+  if (isFarmer.value) {
+    return 'Aquí se muestran las fincas registradas para tu cuenta.';
+  }
+
+  return 'Solo se muestran las fincas que el administrador te ha asignado.';
+});
+
+const emptyTitle = computed(() => (isFarmer.value ? 'No hay fincas registradas.' : 'No hay fincas asignadas.'));
+
+const emptyText = computed(() => {
+  if (isFarmer.value) {
+    return 'Cuando registres una finca, aparecerá en esta lista.';
+  }
+
+  return 'Cuando el administrador asigne fincas, aparecerán en esta lista.';
+});
 
 const visibleFarms = computed(() => {
   const assignedIds = currentUser.value?.assignedFarmIds ?? [];
   const normalizedSearch = search.value.trim().toLowerCase();
 
-  return farms.filter((farm) => {
-    const isAssigned = assignedIds.includes(farm.id);
-    const matchesSearch = farm.name.toLowerCase().includes(normalizedSearch);
+  return fincas.filter((finca) => {
+    const isAssigned = assignedIds.includes(finca.id);
+    const matchesSearch = finca.name.toLowerCase().includes(normalizedSearch);
 
     return isAssigned && matchesSearch;
   });

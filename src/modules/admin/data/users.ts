@@ -1,3 +1,3 @@
-import type { User } from '@/shared/types/domain';
+import type { Usuario } from '@/shared/types/domain';
 
-export const adminUsers: User[] = [];
+export const usuariosAdmin: Usuario[] = [];
