@@ -1,14 +1,14 @@
 import { computed, reactive } from 'vue';
-import { demoUsers } from '@/shared/data/mockData';
-import type { User, UserRole } from '@/shared/types/domain';
+import { usuariosDemo } from '@/shared/data/mockData';
+import type { Rol, Usuario } from '@/shared/types/domain';
 
 const STORAGE_KEY = 'bovweight.session';
 
 interface SessionState {
-  user: User | null;
+  user: Usuario | null;
 }
 
-const loadStoredUser = (): User | null => {
+const loadStoredUser = (): Usuario | null => {
   const stored = localStorage.getItem(STORAGE_KEY);
 
   if (!stored) {
@@ -16,7 +16,7 @@ const loadStoredUser = (): User | null => {
   }
 
   try {
-    return JSON.parse(stored) as User;
+    return JSON.parse(stored) as Usuario;
   } catch {
     localStorage.removeItem(STORAGE_KEY);
     return null;
@@ -30,9 +30,9 @@ const state = reactive<SessionState>({
 export const currentUser = computed(() => state.user);
 export const isAuthenticated = computed(() => Boolean(state.user));
 
-export const login = async (emailOrUser: string, password: string): Promise<User> => {
+export const login = async (emailOrUser: string, password: string): Promise<Usuario> => {
   const normalizedEmail = emailOrUser.trim().toLowerCase();
-  const user = demoUsers.find((candidate) => candidate.email.toLowerCase() === normalizedEmail);
+  const user = usuariosDemo.find((candidate) => candidate.email.toLowerCase() === normalizedEmail);
 
   if (!user || user.status !== 'activo' || password.length < 6) {
     throw new Error('Revise sus credenciales e intente nuevamente.');
@@ -49,14 +49,14 @@ export const logout = () => {
   localStorage.removeItem(STORAGE_KEY);
 };
 
-export const getDefaultRouteForRole = (role: UserRole) => {
+export const getDefaultRouteForRole = (role: Rol) => {
   if (role === 'admin') {
-    return '/app/usuarios';
+    return '/app/inicio';
   }
 
   if (role === 'veterinario') {
-    return '/app/fincas';
+    return '/app/inicio';
   }
 
-  return '/app/bovinos';
+  return '/app/inicio';
 };

@@ -1,26 +1,26 @@
 <template>
   <article class="animal-item">
-    <img :src="animal.photoUrl" :alt="`Foto de ${animal.name}`" />
+    <img :src="bovino.photoUrl" :alt="`Foto de ${bovino.name}`" />
 
     <div class="animal-main">
       <div class="animal-title-row">
-        <h2>{{ animal.name }}</h2>
-        <router-link :to="`/app/bovinos`">Ver mas</router-link>
+        <h2>{{ bovino.name }}</h2>
+        <router-link :to="`/app/bovinos/${bovino.id}`">Ver más</router-link>
       </div>
-      <p>{{ animal.breed }} · {{ animal.sex }}</p>
-      <p class="muted">Arete {{ animal.earTag }}</p>
-      <p class="muted">Ultimo pesaje {{ animal.lastWeightDate }}</p>
+      <p>{{ bovino.breed }} - {{ bovino.sex }}</p>
+      <p class="muted">Arete {{ bovino.earTag }}</p>
+      <p class="muted">Último pesaje {{ bovino.lastWeightDate }}</p>
     </div>
 
-    <strong class="weight">{{ animal.lastWeightKg }} Kg</strong>
+    <strong class="weight">{{ bovino.lastWeightKg }} Kg</strong>
   </article>
 </template>
 
 <script setup lang="ts">
-import type { Animal } from '@/shared/types/domain';
+import type { Bovino } from '@/shared/types/domain';
 
 defineProps<{
-  animal: Animal;
+  bovino: Bovino;
 }>();
 </script>
 

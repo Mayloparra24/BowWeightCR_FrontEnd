@@ -1,12 +1,12 @@
 import { createRouter, createWebHistory } from '@ionic/vue-router';
 import { RouteRecordRaw } from 'vue-router';
 import { currentUser, getDefaultRouteForRole } from '@/modules/auth/services/sessionService';
-import type { UserRole } from '@/shared/types/domain';
+import type { Rol } from '@/shared/types/domain';
 
 declare module 'vue-router' {
   interface RouteMeta {
     requiresAuth?: boolean;
-    roles?: UserRole[];
+    roles?: Rol[];
   }
 }
 
@@ -38,18 +38,39 @@ const routes: Array<RouteRecordRaw> = [
       },
       {
         path: 'fincas',
-        name: 'farms',
+        name: 'fincas',
         component: () => import('@/modules/fincas/pages/FarmListPage.vue'),
       },
       {
         path: 'bovinos',
-        name: 'animals',
-        component: () => import('@/modules/animales/pages/AnimalListPage.vue'),
+        name: 'bovinos',
+        component: () => import('@/modules/animales/pages/BovinoListPage.vue'),
+      },
+      {
+        path: 'bovinos/:id',
+        name: 'bovino-detail',
+        component: () => import('@/modules/animales/pages/BovinoDetailPage.vue'),
       },
       {
         path: 'usuarios',
         name: 'users',
         component: () => import('@/modules/admin/pages/UserManagementPage.vue'),
+        meta: {
+          roles: ['admin'],
+        },
+      },
+      {
+        path: 'usuarios/crear',
+        name: 'users-create',
+        component: () => import('@/modules/admin/pages/CreateUserPage.vue'),
+        meta: {
+          roles: ['admin'],
+        },
+      },
+      {
+        path: 'usuarios/:id',
+        name: 'users-detail',
+        component: () => import('@/modules/admin/pages/UserDetailPage.vue'),
         meta: {
           roles: ['admin'],
         },

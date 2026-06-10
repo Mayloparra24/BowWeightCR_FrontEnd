@@ -1,24 +1,27 @@
 <template>
   <ion-page>
-    <ion-header translucent>
-      <ion-toolbar>
-        <ion-title>Gestion de usuarios</ion-title>
-      </ion-toolbar>
-    </ion-header>
-
     <ion-content class="page-surface">
       <section class="content">
-        <p class="summary">{{ users.length }} registrados · {{ activeCount }} activos · {{ inactiveCount }} inactivos</p>
+        <header class="page-header">
+          <router-link class="back-button" to="/app/inicio" aria-label="Volver al inicio">
+            <ion-icon :icon="chevronBackOutline" />
+          </router-link>
+
+          <div>
+            <h1>Gestión de usuarios</h1>
+            <p>{{ users.length }} registrados - {{ activeCount }} activos - {{ inactiveCount }} inactivos</p>
+          </div>
+        </header>
 
         <label class="search-box">
           <ion-icon :icon="searchOutline" />
           <input v-model="search" type="search" placeholder="Buscar por nombre o correo..." />
         </label>
 
-        <button class="create-button" type="button">
+        <router-link class="create-button" to="/app/usuarios/crear">
           <ion-icon :icon="personAddOutline" />
           Crear nuevo usuario
-        </button>
+        </router-link>
 
         <div class="filter-row">
           <button
@@ -32,7 +35,14 @@
           </button>
         </div>
 
-        <div class="user-list">
+        <section class="user-panel" :class="{ empty: !visibleUsers.length }" aria-label="Listado de usuarios">
+          <div v-if="visibleUsers.length" class="table-head">
+            <span>Nombre</span>
+            <span>Rol</span>
+            <span>Estado</span>
+            <span>Acciones</span>
+          </div>
+
           <article v-for="user in visibleUsers" :key="user.id" class="user-row">
             <div>
               <h2>{{ user.fullName }}</h2>
@@ -40,23 +50,27 @@
             </div>
             <span class="pill role">{{ roleLabel(user.role) }}</span>
             <span class="pill" :class="user.status">{{ user.status }}</span>
+            <router-link :to="`/app/usuarios/${user.id}`">Ver</router-link>
           </article>
-        </div>
 
-        <p class="notice">Toca "Ver" para ver detalle y asignar fincas al veterinario.</p>
+          <div v-if="!visibleUsers.length" class="empty-state">
+            <strong>No hay usuarios registrados.</strong>
+            <span>Crea el primer usuario para habilitar accesos al sistema.</span>
+          </div>
+        </section>
       </section>
     </ion-content>
   </ion-page>
 </template>
 
 <script setup lang="ts">
-import { IonContent, IonHeader, IonIcon, IonPage, IonTitle, IonToolbar } from '@ionic/vue';
-import { personAddOutline, searchOutline } from 'ionicons/icons';
+import { IonContent, IonIcon, IonPage } from '@ionic/vue';
+import { chevronBackOutline, personAddOutline, searchOutline } from 'ionicons/icons';
 import { computed, ref } from 'vue';
-import { demoUsers } from '@/shared/data/mockData';
-import type { UserRole } from '@/shared/types/domain';
+import { usuariosAdmin } from '@/modules/admin/data/users';
+import type { Rol } from '@/shared/types/domain';
 
-const users = demoUsers;
+const users = usuariosAdmin;
 const search = ref('');
 const selectedFilter = ref('Todos');
 const filters = ['Todos', 'Ganaderos', 'Veterinarios', 'Inactivos'];
@@ -64,7 +78,7 @@ const filters = ['Todos', 'Ganaderos', 'Veterinarios', 'Inactivos'];
 const activeCount = computed(() => users.filter((user) => user.status === 'activo').length);
 const inactiveCount = computed(() => users.filter((user) => user.status === 'inactivo').length);
 
-const roleLabel = (role: UserRole) => {
+const roleLabel = (role: Rol) => {
   if (role === 'admin') {
     return 'Admin';
   }
@@ -100,25 +114,66 @@ const visibleUsers = computed(() => {
 }
 
 .content {
-  padding: 22px 20px;
+  width: 100%;
+  max-width: 390px;
+  min-height: 100%;
+  margin: 0 auto;
+  padding: 22px 18px 28px;
+  box-sizing: border-box;
 }
 
-.summary {
-  margin: 0 0 18px;
-  color: #566071;
+.page-header {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 72px;
   text-align: center;
-  font-size: 13px;
+}
+
+.back-button {
+  position: absolute;
+  left: 0;
+  top: 19px;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  color: #071832;
+}
+
+.back-button ion-icon {
+  font-size: 20px;
+}
+
+h1 {
+  margin: 0;
+  color: #071832;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.page-header p {
+  margin: 4px 0 0;
+  color: #2f75b5;
+  font-size: 11px;
+  font-weight: 800;
 }
 
 .search-box {
-  min-height: 46px;
+  width: 100%;
+  min-height: 44px;
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 0 14px;
+  margin-top: 22px;
+  padding: 0 13px;
   border-radius: 8px;
   background: #d9d9d9;
   color: #071832;
+}
+
+.search-box ion-icon {
+  font-size: 19px;
 }
 
 .search-box input {
@@ -126,27 +181,35 @@ const visibleUsers = computed(() => {
   border: 0;
   outline: 0;
   background: transparent;
+  color: #071832;
+  font-size: 13px;
 }
 
 .create-button {
-  min-height: 38px;
+  min-height: 36px;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   margin: 20px 0 14px;
-  padding: 0 14px;
+  padding: 0 13px;
   border: 0;
   border-radius: 999px;
   background: #052b66;
   color: #ffffff;
-  font-weight: 800;
+  font-size: 13px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.create-button ion-icon {
+  font-size: 18px;
 }
 
 .filter-row {
   display: flex;
-  gap: 8px;
+  gap: 7px;
   overflow-x: auto;
-  padding-bottom: 12px;
+  padding-bottom: 13px;
 }
 
 .filter-row button {
@@ -154,9 +217,9 @@ const visibleUsers = computed(() => {
   border-radius: 999px;
   background: #a8acb8;
   color: #052b66;
-  font-size: 12px;
-  font-weight: 800;
-  padding: 9px 14px;
+  font-size: 11px;
+  font-weight: 900;
+  padding: 8px 13px;
   white-space: nowrap;
 }
 
@@ -165,46 +228,64 @@ const visibleUsers = computed(() => {
   color: #ffffff;
 }
 
-.user-list {
+.user-panel {
+  min-height: 204px;
   display: grid;
-  gap: 8px;
-  padding: 14px;
+  align-content: start;
+  gap: 12px;
+  padding: 15px 12px;
   border-radius: 8px;
   background: #071832;
+  color: #ffffff;
+}
+
+.user-panel.empty {
+  place-items: center;
+  align-content: center;
+}
+
+.table-head {
+  display: grid;
+  grid-template-columns: minmax(74px, 1.2fr) 0.75fr 0.75fr 0.85fr;
+  gap: 8px;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 900;
 }
 
 .user-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(74px, 1.2fr) 0.75fr 0.75fr 0.85fr;
   gap: 8px;
   align-items: center;
-  color: #ffffff;
 }
 
 h2 {
   margin: 0;
-  font-size: 13px;
-  font-weight: 800;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 900;
 }
 
-p {
-  margin: 3px 0 0;
+.user-row p {
+  margin: 2px 0 0;
   color: #cfe0f5;
-  font-size: 11px;
+  font-size: 10px;
 }
 
 .pill {
+  justify-self: start;
   border-radius: 999px;
-  padding: 6px 9px;
-  background: #95f596;
-  color: #073b0b;
-  font-size: 11px;
-  font-weight: 800;
+  padding: 5px 7px;
+  background: #d8e8f7;
+  color: #052b66;
+  font-size: 10px;
+  font-weight: 900;
   text-transform: capitalize;
 }
 
 .pill.role {
-  background: #d8e7fb;
+  background: #b7d8f0;
   color: #052b66;
 }
 
@@ -213,12 +294,36 @@ p {
   color: #571010;
 }
 
-.notice {
-  margin-top: 18px;
-  padding: 10px;
-  background: #fff08a;
-  color: #74601d;
+.user-row a {
+  min-height: 25px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  background: #6f7a8a;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.empty-state {
+  display: grid;
+  gap: 6px;
+  place-items: center;
+  padding: 26px 8px;
+  color: #cfe0f5;
   text-align: center;
-  font-size: 12px;
+}
+
+.empty-state strong {
+  color: #ffffff;
+  font-size: 13px;
+}
+
+.empty-state span {
+  max-width: 220px;
+  font-size: 11px;
+  line-height: 1.35;
 }
 </style>

@@ -70,7 +70,6 @@
               <ion-button class="login-button" expand="block" type="submit" :disabled="isSubmitting">
                 <ion-spinner v-if="isSubmitting" name="crescent" />
                 <span v-else>
-                  <ion-icon :icon="shieldCheckmarkOutline" />
                   Iniciar sesión
                 </span>
               </ion-button>
@@ -100,7 +99,6 @@ import {
   lockClosedOutline,
   mailOutline,
   personCircleOutline,
-  shieldCheckmarkOutline,
 } from 'ionicons/icons';
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
@@ -158,7 +156,7 @@ const handleLogin = async () => {
 
 <style scoped>
 .login-page {
-  --background: linear-gradient(180deg, #062a1f 0%, #0f3f2a 30%, #153f2b 60%, #294f3a 100%);
+  --background: linear-gradient(180deg, #062b66 0%, #071832 100%);
   position: relative;
   min-height: 100vh;
 }
@@ -167,9 +165,9 @@ const handleLogin = async () => {
   content: '';
   position: absolute;
   inset: 0;
-  background-image: radial-gradient(circle at 10% 20%, rgba(255,255,255,0.03), transparent 8%),
-    radial-gradient(circle at 90% 80%, rgba(255,255,255,0.02), transparent 12%),
-    linear-gradient(180deg, rgba(8,42,31,0.65), rgba(11,40,30,0.45));
+  background-image:
+    radial-gradient(circle at 14% 8%, rgba(139, 183, 229, 0.18), transparent 30%),
+    linear-gradient(180deg, rgba(5, 43, 102, 0.24), rgba(7, 24, 50, 0.42));
   pointer-events: none;
   z-index: 0;
 }
@@ -192,9 +190,9 @@ const handleLogin = async () => {
   flex-direction: column;
   overflow: hidden;
   border-radius: 20px;
-  background: #dbe8dc;
-  border: 1px solid rgba(211, 226, 199, 0.36);
-  box-shadow: 0 30px 80px rgba(2,12,8,0.5);
+  background: #ffffff;
+  border: 1px solid rgba(139, 183, 229, 0.36);
+  box-shadow: 0 30px 80px rgba(2, 14, 32, 0.42);
 }
 
 .brand-hero {
@@ -204,9 +202,9 @@ const handleLogin = async () => {
   padding: 26px 28px 20px;
   overflow: hidden;
   background:
-    radial-gradient(circle at 18% 12%, rgba(242, 195, 107, 0.22), transparent 34%),
-    linear-gradient(145deg, #0b2d22 0%, #185538 58%, #234f38 100%);
-  border-bottom: 1px solid rgba(242, 195, 107, 0.22);
+    radial-gradient(circle at 50% 0%, rgba(139, 183, 229, 0.26), transparent 42%),
+    linear-gradient(180deg, #062b66 0%, #071832 100%);
+  border-bottom: 1px solid rgba(139, 183, 229, 0.2);
 }
 
 .brand-hero::after {
@@ -214,7 +212,7 @@ const handleLogin = async () => {
   position: absolute;
   inset: auto 34px 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(242, 195, 107, 0.7), transparent);
+  background: linear-gradient(90deg, transparent, rgba(139, 183, 229, 0.48), transparent);
 }
 
 .brand-block {
@@ -235,9 +233,9 @@ const handleLogin = async () => {
   border-radius: 30px;
   overflow: hidden;
   padding: 7px 10px;
-  background: linear-gradient(180deg, #f7f4e8 0%, #e7eadb 100%);
-  border: 1px solid rgba(242, 195, 107, 0.34);
-  box-shadow: 0 16px 34px rgba(3, 14, 28, 0.24);
+  background: #fffaf0;
+  border: 1px solid rgba(8, 37, 74, 0.08);
+  box-shadow: 0 16px 34px rgba(8, 37, 74, 0.12);
 }
 
 .logo-badge::before {
@@ -258,7 +256,7 @@ const handleLogin = async () => {
 
 .brand-copy p {
   margin: 0;
-  color: #f7f4e8;
+  color: #ffffff;
   font-size: 28px;
   font-weight: 900;
   letter-spacing: 0;
@@ -266,13 +264,13 @@ const handleLogin = async () => {
 }
 
 .brand-copy p span {
-  color: #f2c36b;
+  color: #2f75b5;
 }
 
 .brand-copy small {
   display: block;
   margin-top: 4px;
-  color: #c9d9cd;
+  color: #cfe0f5;
   font-size: 13px;
   font-weight: 700;
   line-height: 1.2;
@@ -284,8 +282,7 @@ const handleLogin = async () => {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background:
-    linear-gradient(180deg, #e7efe5 0%, #dce8dc 48%, #d2e0d1 100%);
+  background: #ffffff;
   padding: 34px 0 0;
 }
 
@@ -294,8 +291,8 @@ const handleLogin = async () => {
   position: absolute;
   inset: 0;
   background: url('/vaca.png') center 35% / cover no-repeat;
-  filter: saturate(92%) contrast(104%) sepia(5%);
-  opacity: 0.46;
+  filter: saturate(92%) contrast(108%) sepia(4%);
+  opacity: 0.48;
   pointer-events: none;
   z-index: 0;
 }
@@ -305,9 +302,8 @@ const handleLogin = async () => {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(180deg, rgba(231, 239, 229, 0.5) 0%, rgba(220, 232, 220, 0.64) 45%, rgba(210, 224, 209, 0.78) 100%),
-    linear-gradient(90deg, rgba(231, 239, 229, 0.32), rgba(231, 239, 229, 0.08), rgba(231, 239, 229, 0.32)),
-    radial-gradient(circle at 50% 8%, rgba(242, 195, 107, 0.18), transparent 34%);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.62) 0%, rgba(255, 255, 255, 0.56) 48%, rgba(255, 255, 255, 0.72) 100%),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.22));
   pointer-events: none;
   z-index: 0;
 }
@@ -344,13 +340,13 @@ const handleLogin = async () => {
   align-items: center;
   gap: 8px;
   margin-bottom: 8px;
-  color: #09251c;
+  color: #071832;
   font-size: 12px;
   font-weight: 800;
 }
 
 .field-group label ion-icon {
-  color: #1e7a48;
+  color: #052b66;
   font-size: 17px;
 }
 
@@ -361,16 +357,16 @@ const handleLogin = async () => {
   align-items: center;
   overflow: hidden;
   box-sizing: border-box;
-  border: 1px solid rgba(24, 85, 56, 0.13);
+  border: 1px solid #a8acb8;
   border-radius: 12px;
-  background: #f4f1e6;
-  box-shadow: 0 8px 20px rgba(3, 14, 28, 0.07);
+  background: #ffffff;
+  box-shadow: 0 8px 20px rgba(7, 24, 50, 0.06);
   transition: border-color 140ms ease, box-shadow 140ms ease;
 }
 
 .input-shell:focus-within {
-  border-color: #1e7a48;
-  box-shadow: 0 0 0 3px rgba(30, 122, 72, 0.14);
+  border-color: #052b66;
+  box-shadow: 0 0 0 3px rgba(5, 43, 102, 0.12);
 }
 
 .input-shell.invalid {
@@ -382,8 +378,8 @@ const handleLogin = async () => {
   width: 100%;
   flex: 1;
   --background: transparent;
-  --color: #09251c;
-  --placeholder-color: #6e7d72;
+  --color: #071832;
+  --placeholder-color: #566071;
   --placeholder-opacity: 1;
   --padding-bottom: 0;
   --padding-end: 12px;
@@ -396,7 +392,7 @@ const handleLogin = async () => {
 .field-icon {
   flex: 0 0 auto;
   margin-left: 13px;
-  color: #738474;
+  color: #6f7a8a;
   font-size: 19px;
 }
 
@@ -412,7 +408,7 @@ const handleLogin = async () => {
   flex: 0 0 auto;
   border: 0;
   background: transparent;
-  color: #66796c;
+  color: #071832;
   font-size: 19px;
 }
 
@@ -422,19 +418,19 @@ const handleLogin = async () => {
   margin: -3px 0 16px auto;
   border: 0;
   background: transparent;
-  color: #17643d;
+  color: #071832;
   font-size: 12px;
   font-weight: 800;
   line-height: 1.2;
 }
 
 .login-button {
-  --background: linear-gradient(135deg, #1f7a47 0%, #0f3f2a 100%);
-  --background-activated: #0f3f2a;
-  --background-focused: #0f3f2a;
-  --background-hover: #0f3f2a;
+  --background: #052b66;
+  --background-activated: #071832;
+  --background-focused: #071832;
+  --background-hover: #071832;
   --border-radius: 10px;
-  --box-shadow: 0 16px 30px rgba(15, 63, 42, 0.26);
+  --box-shadow: 0 16px 30px rgba(5, 43, 102, 0.18);
   min-height: 49px;
   margin-top: 4px;
   font-weight: 900;
@@ -461,12 +457,12 @@ const handleLogin = async () => {
 .support-text {
   margin: 24px 30px 28px;
   text-align: center;
-  color: #66796c;
+  color: #566071;
   font-size: 12px;
 }
 
 .support-text a {
-  color: #17643d;
+  color: #2f75b5;
   font-weight: 800;
   text-decoration: none;
 }
@@ -474,34 +470,115 @@ const handleLogin = async () => {
 @media (max-width: 430px) {
   .login-shell {
     align-items: stretch;
-    padding: 16px 12px;
+    min-height: auto;
+    padding: 10px 10px 14px;
   }
 
   .login-card {
     max-width: none;
     min-height: auto;
-    border-radius: 28px;
+    border-radius: 22px;
     box-shadow: 0 24px 58px rgba(3, 14, 28, 0.26);
+  }
+
+  .brand-hero {
+    padding: 16px 18px 12px;
+  }
+
+  .brand-block {
+    gap: 7px;
+  }
+
+  .logo-badge {
+    width: 86px;
+    height: 72px;
+    border-radius: 22px;
+    padding: 5px 8px;
+  }
+
+  .brand-copy p {
+    font-size: 22px;
+  }
+
+  .brand-copy small {
+    margin-top: 3px;
+    font-size: 11px;
+  }
+
+  .login-panel {
+    padding-top: 18px;
+  }
+
+  .login-panel::before {
+    background-position: center 28%;
+    opacity: 0.42;
+  }
+
+  .login-form {
+    padding: 0 24px;
+  }
+
+  .field-group {
+    margin-bottom: 10px;
+  }
+
+  .field-group label {
+    margin-bottom: 6px;
+    font-size: 11px;
+  }
+
+  .input-shell {
+    min-height: 42px;
+    border-radius: 10px;
+  }
+
+  .login-form ion-input {
+    min-height: 40px;
+    font-size: 12px;
+  }
+
+  .field-icon {
+    margin-left: 12px;
+    font-size: 17px;
+  }
+
+  .password-toggle {
+    width: 38px;
+    height: 40px;
+  }
+
+  .forgot-button {
+    margin: -2px 0 12px auto;
+    font-size: 11px;
+  }
+
+  .login-button {
+    min-height: 43px;
+  }
+
+  .support-text {
+    margin: 18px 24px 20px;
+    font-size: 11px;
   }
 }
 
 @media (max-height: 760px) {
   .brand-hero {
-    padding-top: 18px;
-    padding-bottom: 14px;
+    padding-top: 14px;
+    padding-bottom: 10px;
   }
 
   .logo-badge {
-    width: 108px;
-    height: 88px;
+    width: 82px;
+    height: 68px;
   }
 
   .brand-copy p {
-    font-size: 25px;
+    font-size: 21px;
   }
 
   .login-panel {
-    padding-top: 24px;
+    padding-top: 16px;
   }
 }
 </style>
