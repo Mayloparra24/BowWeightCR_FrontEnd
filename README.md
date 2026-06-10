@@ -77,7 +77,7 @@ Para ejecutar, emular o firmar la aplicación desde las herramientas oficiales:
 ## 📁 Estructura del Proyecto
 
 El código fuente principal se encuentra en la carpeta `/src`:
-*   `src/components/`: Componentes reutilizables de Vue.
-*   `src/views/`: Pantallas o páginas principales de la aplicación.
+*   `src/modules/`: Pantallas y servicios organizados por módulo funcional.
+*   `src/shared/`: Componentes, layouts, tipos y datos compartidos por las vistas.
 *   `src/router/`: Configuración de rutas de navegación (Vue Router).
 *   `src/theme/`: Variables globales de CSS y estilos de Ionic.
