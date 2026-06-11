@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils';
-import LoginPage from '@/modules/auth/pages/LoginPage.vue';
+import LoginPage from '../../src/modules/auth/pages/LoginPage.vue';
 import { describe, expect, test, vi } from 'vitest';
 
 vi.mock('vue-router', () => ({
@@ -12,7 +12,7 @@ describe('LoginPage.vue', () => {
   test('renders the login form', () => {
     const wrapper = mount(LoginPage);
 
-    expect(wrapper.text()).toContain('Bienvenido de nuevo');
+    expect(wrapper.text()).toContain('BovWeight');
     expect(wrapper.text()).toContain('Iniciar sesión');
   });
 });
