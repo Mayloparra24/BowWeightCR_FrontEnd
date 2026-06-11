@@ -104,7 +104,7 @@
         </section>
 
         <section v-else class="farmer-home">
-          <router-link class="photo-card" to="/app/bovinos">
+          <router-link class="photo-card" to="/app/calcular-peso">
             <span>Nuevo cálculo</span>
             <strong>Tomar foto</strong>
             <small>Calcula el peso utilizando IA</small>

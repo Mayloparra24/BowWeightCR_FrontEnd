@@ -1,2 +1,50 @@
 /* For information on how to create your own theme, please refer to:
 http://ionicframework.com/docs/theming/ */
+
+/*
+  Paleta oficial BovWeightCR.
+  Pendiente sugerido #1 de GUIA_COLABORADORES: centralizar colores aqui.
+  Los componentes nuevos deben usar estas variables en lugar de hex sueltos.
+  Los componentes existentes se iran migrando de forma progresiva.
+*/
+:root {
+    /* Azules principales */
+    --bw-primary: #052b66;
+    /* botones principales, cards importantes, estados activos */
+    --bw-navy: #071832;
+    /* texto fuerte y paneles oscuros */
+    --bw-header: #08254a;
+    /* titulos y headers */
+    --bw-primary-alt: #082b65;
+    /* azul alterno oscuro */
+    --bw-accent: #2f75b5;
+    /* enlaces y acentos */
+    --bw-card-mid: #5b8fc0;
+    /* cards secundarias */
+    --bw-sky: #8bb7e5;
+    /* celeste de apoyo */
+    --bw-sky-light: #b7d8f0;
+    --bw-sky-light-alt: #b7dff7;
+    --bw-sky-soft: #cfe0f5;
+    --bw-chip: #d8e8f7;
+    /* chips y fondos celestes */
+
+    /* Fondos y neutros */
+    --bw-surface: #f5f8fb;
+    /* fondo principal de pantallas operativas */
+    --bw-white: #ffffff;
+    --bw-text: #071832;
+    --bw-text-secondary: #566071;
+    --bw-icon-muted: #6f7a8a;
+    --bw-gray-mid: #a8acb8;
+    --bw-gray-card: #d9d9d9;
+    --bw-border: #e4e8ef;
+
+    /* Estados */
+    --bw-error: #d92d20;
+    --bw-error-text: #b42318;
+    --bw-error-soft: #ff7373;
+    --bw-error-soft-text: #571010;
+    --bw-warning: #fff08a;
+    --bw-warning-text: #74601d;
+}

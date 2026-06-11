@@ -52,6 +52,14 @@ const routes: Array<RouteRecordRaw> = [
         component: () => import('@/modules/animales/pages/BovinoDetailPage.vue'),
       },
       {
+        path: 'calcular-peso',
+        name: 'calcular-peso',
+        component: () => import('@/modules/pesajes/pages/CalcularPesoPage.vue'),
+        meta: {
+          roles: ['ganadero'],
+        },
+      },
+      {
         path: 'usuarios',
         name: 'users',
         component: () => import('@/modules/admin/pages/UserManagementPage.vue'),
