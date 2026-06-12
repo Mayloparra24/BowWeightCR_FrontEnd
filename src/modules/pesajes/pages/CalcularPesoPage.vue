@@ -232,7 +232,7 @@
 </template>
 
 <script setup lang="ts">
-import { IonContent, IonIcon, IonPage, IonSpinner } from '@ionic/vue';
+import { IonContent, IonIcon, IonPage, IonSpinner, onIonViewWillLeave } from '@ionic/vue';
 import { cameraOutline, checkmarkOutline, chevronBackOutline } from 'ionicons/icons';
 import { computed, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
@@ -331,7 +331,10 @@ const formularioValido = computed(() => {
 const farmName = (farmId: string) => fincas.find((farm) => farm.id === farmId)?.name ?? 'Sin finca';
 
 const openCamera = () => {
-  fileInput.value?.click();
+  if (fileInput.value) {
+    fileInput.value.value = '';
+    fileInput.value.click();
+  }
 };
 
 const onPhotoSelected = (event: Event) => {
@@ -347,8 +350,20 @@ const onPhotoSelected = (event: Event) => {
   }
 
   photoUrl.value = URL.createObjectURL(file);
-  input.value = '';
+  setTimeout(() => {
+    if (fileInput.value) {
+      fileInput.value.value = '';
+    }
+  }, 100);
 };
+
+onIonViewWillLeave(() => {
+  if (photoUrl.value.startsWith('blob:')) {
+    URL.revokeObjectURL(photoUrl.value);
+  }
+  photoUrl.value = '';
+  step.value = 'foto';
+});
 
 const goBack = () => {
   formError.value = '';
