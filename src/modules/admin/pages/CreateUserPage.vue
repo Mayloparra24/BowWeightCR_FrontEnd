@@ -183,13 +183,7 @@
 </template>
 
 <script setup lang="ts">
-import { 
-  IonContent, 
-  IonIcon, 
-  IonPage, 
-  onIonViewWillEnter, 
-  onIonViewWillLeave } 
-  from '@ionic/vue';
+import { IonContent, IonIcon, IonPage, onIonViewWillLeave, onIonViewWillEnter } from '@ionic/vue';
 import {
   arrowForwardOutline,
   checkmarkOutline,
@@ -309,6 +303,16 @@ function toggleFarm(farmId: string) {
 function createUser() {
   currentStep.value = 'success';
 }
+
+onIonViewWillLeave(() => {
+  currentStep.value = 'details';
+  selectedRole.value = 'veterinario';
+  fullName.value = '';
+  email.value = '';
+  temporaryPassword.value = generateTemporaryPassword();
+  showPassword.value = false;
+  selectedFarmIds.value = [];
+});
 </script>
 
 <style scoped>
