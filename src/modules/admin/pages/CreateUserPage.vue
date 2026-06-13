@@ -24,14 +24,7 @@
                 type="button"
                 @click="selectedRole = option.value"
               >
-                <img
-                  v-if="option.value === 'ganadero'"
-                  class="role-image"
-                  src="/iconoganadero.png"
-                  alt=""
-                  aria-hidden="true"
-                />
-                <ion-icon v-else :icon="option.icon" />
+                <ion-icon :icon="option.icon" />
                 {{ option.label }}
               </button>
             </div>
@@ -138,9 +131,13 @@
             <ion-icon :icon="personOutline" />
           </div>
           <h2>Usuario creado</h2>
-          <p>
-            Se preparó la cuenta de {{ cleanFullName }} con acceso a {{ selectedFarmIds.length }}
-            {{ selectedFarmIds.length === 1 ? 'finca' : 'fincas' }}.
+          
+          <p v-if="selectedRole === 'veterinario'">
+          Se preparó la cuenta de {{ cleanFullName }} con acceso a {{ selectedFarmIds.length }}
+          {{ selectedFarmIds.length === 1 ? 'finca' : 'fincas' }}.
+          </p>
+          <p v-else>
+          Se preparó la cuenta de {{ cleanFullName }} con el rol de Ganadero listo para operar.
           </p>
 
           <section class="account-card">
@@ -163,7 +160,7 @@
                   <span>{{ roleLabel }}</span>
                 </dd>
               </div>
-              <div>
+              <div v-if="selectedRole === 'veterinario'">
                 <dt>Fincas</dt>
                 <dd>{{ selectedFarmIds.length }} asignadas</dd>
               </div>
@@ -186,7 +183,7 @@
 </template>
 
 <script setup lang="ts">
-import { IonContent, IonIcon, IonPage } from '@ionic/vue';
+import { IonContent, IonIcon, IonPage, onIonViewWillLeave, onIonViewWillEnter } from '@ionic/vue';
 import {
   arrowForwardOutline,
   checkmarkOutline,
@@ -203,8 +200,12 @@ import type { Finca, Rol } from '@/shared/types/domain';
 
 type CreateStep = 'details' | 'fincas' | 'success';
 
-const roles: Array<{ label: string; value: Exclude<Rol, 'admin'>; icon?: string }> = [
-  { label: 'Ganadero', value: 'ganadero' },
+// 1. Definimos el SVG del ganadero en formato de datos (Data URI)
+const ganaderoIcon = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 8 8"><path fill="currentColor" d="M0 3q4 2 8 0L6 5Q4 6 2 5m2-3q2-3 2 1q-2 1-4 0q0-4 2-1"/></svg>';
+
+// 2. Pasamos el icono al arreglo de roles
+const roles: Array<{ label: string; value: Exclude<Rol, 'admin'>; icon: string }> = [
+  { label: 'Ganadero', value: 'ganadero', icon: ganaderoIcon }, // <-- Ahora usa el nuevo SVG
   { label: 'Veterinario', value: 'veterinario', icon: pulseOutline },
 ];
 
@@ -222,6 +223,26 @@ const cleanFullName = computed(() => fullName.value.trim());
 const cleanEmail = computed(() => email.value.trim().toLowerCase());
 const roleLabel = computed(() => (selectedRole.value === 'veterinario' ? 'Veterinario' : 'Ganadero'));
 
+onIonViewWillEnter(() => {
+  resetForm();
+  const tabBar = document.querySelector('ion-tab-bar');
+  if (tabBar) tabBar.style.display = 'none';
+});
+
+onIonViewWillLeave(() => {
+  const tabBar = document.querySelector('ion-tab-bar');
+  if (tabBar) tabBar.style.display = 'flex';
+});
+
+function resetForm() {
+  currentStep.value = 'details';
+  selectedRole.value = 'veterinario';
+  fullName.value = '';
+  email.value = '';
+  temporaryPassword.value = generateTemporaryPassword();
+  showPassword.value = false;
+  selectedFarmIds.value = [];
+}
 const headerSubtitle = computed(() => {
   if (currentStep.value === 'fincas') {
     return 'Paso 2 de 2 - Asignar fincas';
@@ -261,11 +282,13 @@ async function copyTemporaryPassword() {
 }
 
 function goToFarms() {
-  if (!canContinueDetails.value) {
-    return;
-  }
+  if (!canContinueDetails.value) return;
 
-  currentStep.value = 'fincas';
+  if (selectedRole.value === 'ganadero') {
+    createUser(); 
+  } else {
+    currentStep.value = 'fincas';
+  }
 }
 
 function toggleFarm(farmId: string) {
@@ -280,6 +303,16 @@ function toggleFarm(farmId: string) {
 function createUser() {
   currentStep.value = 'success';
 }
+
+onIonViewWillLeave(() => {
+  currentStep.value = 'details';
+  selectedRole.value = 'veterinario';
+  fullName.value = '';
+  email.value = '';
+  temporaryPassword.value = generateTemporaryPassword();
+  showPassword.value = false;
+  selectedFarmIds.value = [];
+});
 </script>
 
 <style scoped>
@@ -369,12 +402,6 @@ h2 {
 
 .role-selector ion-icon {
   font-size: 22px;
-}
-
-.role-image {
-  width: 24px;
-  height: 24px;
-  object-fit: contain;
 }
 
 .role-selector .active {
@@ -477,8 +504,11 @@ input::placeholder {
 
 .actions {
   display: flex;
-  justify-content: flex-end;
-  gap: 14px;
+  justify-content: center; /* Cambiado de flex-end a center */
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  margin-top: 10px;
 }
 
 .cancel-button,

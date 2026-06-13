@@ -8,8 +8,37 @@ interface SessionState {
   user: Usuario | null;
 }
 
+/**
+ * Acceso seguro a localStorage. En algunos entornos (pruebas, webviews
+ * restringidos, modo privado) `localStorage` puede no existir o lanzar al
+ * usarse. Estas funciones evitan que la app o los tests se rompan.
+ */
+const safeStorageGet = (key: string): string | null => {
+  try {
+    return globalThis.localStorage?.getItem(key) ?? null;
+  } catch {
+    return null;
+  }
+};
+
+const safeStorageSet = (key: string, value: string): void => {
+  try {
+    globalThis.localStorage?.setItem(key, value);
+  } catch {
+    /* almacenamiento no disponible: la sesion solo vive en memoria */
+  }
+};
+
+const safeStorageRemove = (key: string): void => {
+  try {
+    globalThis.localStorage?.removeItem(key);
+  } catch {
+    /* sin almacenamiento: nada que limpiar */
+  }
+};
+
 const loadStoredUser = (): Usuario | null => {
-  const stored = localStorage.getItem(STORAGE_KEY);
+  const stored = safeStorageGet(STORAGE_KEY);
 
   if (!stored) {
     return null;
@@ -18,7 +47,7 @@ const loadStoredUser = (): Usuario | null => {
   try {
     return JSON.parse(stored) as Usuario;
   } catch {
-    localStorage.removeItem(STORAGE_KEY);
+    safeStorageRemove(STORAGE_KEY);
     return null;
   }
 };
@@ -39,14 +68,14 @@ export const login = async (emailOrUser: string, password: string): Promise<Usua
   }
 
   state.user = user;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
+  safeStorageSet(STORAGE_KEY, JSON.stringify(user));
 
   return user;
 };
 
 export const logout = () => {
   state.user = null;
-  localStorage.removeItem(STORAGE_KEY);
+  safeStorageRemove(STORAGE_KEY);
 };
 
 export const getDefaultRouteForRole = (role: Rol) => {

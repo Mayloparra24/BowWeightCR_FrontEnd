@@ -1,4 +1,9 @@
+import { reactive } from 'vue';
 import type { Bovino, Finca, RegistroPeso, Usuario } from '@/shared/types/domain';
+
+// Datos MOCK: no existe API real todavia. `bovinos` y `registrosPeso` son
+// reactivos para que los pesajes creados desde el flujo del ganadero se
+// reflejen en dashboard, listas e historial sin recargar.
 
 export const usuariosDemo: Usuario[] = [
   {
@@ -48,7 +53,7 @@ export const fincas: Finca[] = [
   },
 ];
 
-export const bovinos: Bovino[] = [
+export const bovinos: Bovino[] = reactive([
   {
     id: 'bovino-chirriche',
     farmId: 'farm-esperanza',
@@ -85,9 +90,9 @@ export const bovinos: Bovino[] = [
     lastWeightKg: 428,
     lastWeightDate: '19/10/2024',
   },
-];
+]);
 
-export const registrosPeso: RegistroPeso[] = [
+export const registrosPeso: RegistroPeso[] = reactive([
   {
     id: 'weight-1',
     bovinoId: 'bovino-chirriche',
@@ -109,4 +114,4 @@ export const registrosPeso: RegistroPeso[] = [
     weightKg: 385,
     source: 'IA',
   },
-];
+]);
