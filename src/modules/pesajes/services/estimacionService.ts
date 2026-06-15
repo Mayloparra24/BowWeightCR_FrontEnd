@@ -87,6 +87,7 @@ export interface NuevoBovinoInput {
   farmId: string;
   breed: string;
   sex: Bovino['sex'];
+  status?: Bovino['status'];
   birthDate: string;
   notes: string;
   photoUrl: string;
@@ -108,10 +109,11 @@ export const registrarBovino = (input: NuevoBovinoInput): Bovino => {
     earTag: input.earTag.trim(),
     breed: input.breed,
     sex: input.sex,
-    status: 'Activo',
+    status: input.status ?? 'Activo',
     photoUrl: input.photoUrl,
     lastWeightKg: 0,
     lastWeightDate: '',
+    observations: input.notes.trim(),
   };
 
   bovinos.push(bovino);

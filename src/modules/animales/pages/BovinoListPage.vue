@@ -11,6 +11,15 @@
             <h1>Bovinos</h1>
             <p>{{ bovinosVisibles.length }} disponibles</p>
           </div>
+          <button
+            class="export-button"
+            type="button"
+            aria-label="Exportar inventario"
+            :disabled="!bovinosVisibles.length"
+            @click="exportarInventario"
+          >
+            <ion-icon :icon="downloadOutline" />
+          </button>
         </header>
 
         <label class="search-box">
@@ -33,27 +42,36 @@
 
 <script setup lang="ts">
 import { IonContent, IonIcon, IonPage } from '@ionic/vue';
-import { chevronBackOutline, searchOutline } from 'ionicons/icons';
+import { chevronBackOutline, downloadOutline, searchOutline } from 'ionicons/icons';
 import { computed, ref } from 'vue';
+import { useRoute } from 'vue-router';
 import { currentUser } from '@/modules/auth/services/sessionService';
-import { bovinos } from '@/shared/data/mockData';
+import { bovinos, fincas } from '@/shared/data/mockData';
 import BovinoListItem from '@/shared/components/BovinoListItem.vue';
+import { exportInventarioCsv } from '@/shared/services/reportService';
 
 const search = ref('');
+const route = useRoute();
 
 const bovinosVisibles = computed(() => {
   const assignedFarmIds = currentUser.value?.assignedFarmIds ?? [];
+  const selectedFarmId = typeof route.query.finca === 'string' ? route.query.finca : '';
   const normalizedSearch = search.value.trim().toLowerCase();
 
   return bovinos.filter((bovino) => {
     const canSeeFarm = assignedFarmIds.includes(bovino.farmId);
+    const matchesFarm = !selectedFarmId || bovino.farmId === selectedFarmId;
     const matchesSearch =
       bovino.name.toLowerCase().includes(normalizedSearch) ||
       bovino.earTag.includes(normalizedSearch);
 
-    return canSeeFarm && matchesSearch;
+    return canSeeFarm && matchesFarm && matchesSearch;
   });
 });
+
+const exportarInventario = () => {
+  exportInventarioCsv(bovinosVisibles.value, fincas);
+};
 </script>
 
 <style scoped>
@@ -92,6 +110,29 @@ const bovinosVisibles = computed(() => {
   display: grid;
   place-items: center;
   color: #071832;
+}
+
+.export-button {
+  position: absolute;
+  right: 0;
+  top: 19px;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(8, 37, 74, 0.1);
+  border-radius: 8px;
+  background: #ffffff;
+  color: #052b66;
+  box-shadow: 0 10px 22px rgba(8, 37, 74, 0.08);
+}
+
+.export-button:disabled {
+  opacity: 0.4;
+}
+
+.export-button ion-icon {
+  font-size: 17px;
 }
 
 h1 {

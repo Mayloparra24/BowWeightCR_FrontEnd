@@ -29,7 +29,7 @@
               <h2>{{ farm.name }}</h2>
               <p>{{ farm.location }} - {{ farm.cattleCount }} cabezas</p>
             </div>
-            <router-link to="/app/bovinos">Ver</router-link>
+            <router-link :to="`/app/bovinos?finca=${farm.id}`">Ver</router-link>
           </article>
         </div>
 

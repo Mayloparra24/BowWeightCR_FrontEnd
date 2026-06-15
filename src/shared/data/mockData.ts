@@ -23,6 +23,14 @@ export const usuariosDemo: Usuario[] = [
     assignedFarmIds: ['farm-esperanza'],
   },
   {
+    id: 'user-asistente',
+    fullName: 'Ana Campos',
+    email: 'ana@bovweight.cr',
+    role: 'asistente',
+    status: 'activo',
+    assignedFarmIds: ['farm-esperanza'],
+  },
+  {
     id: 'user-vet',
     fullName: 'Dr. Roberto Solano',
     email: 'solano@vet.cr',
@@ -65,6 +73,7 @@ export const bovinos: Bovino[] = reactive([
     photoUrl: 'https://images.unsplash.com/photo-1527153857715-3908f2bae5e8?auto=format&fit=crop&w=180&q=80',
     lastWeightKg: 450,
     lastWeightDate: '27/12/2024',
+    observations: 'Animal con buena condicion corporal.',
   },
   {
     id: 'bovino-sombra',
@@ -77,6 +86,7 @@ export const bovinos: Bovino[] = reactive([
     photoUrl: 'https://images.unsplash.com/photo-1500595046743-cd271d694d30?auto=format&fit=crop&w=180&q=80',
     lastWeightKg: 521,
     lastWeightDate: '10/09/2024',
+    observations: 'Revisar ganancia de peso en el proximo control.',
   },
   {
     id: 'bovino-ziggy',
@@ -89,6 +99,7 @@ export const bovinos: Bovino[] = reactive([
     photoUrl: 'https://images.unsplash.com/photo-1535435734705-4f0f32e27c83?auto=format&fit=crop&w=180&q=80',
     lastWeightKg: 428,
     lastWeightDate: '19/10/2024',
+    observations: 'Asignado a seguimiento veterinario.',
   },
 ]);
 

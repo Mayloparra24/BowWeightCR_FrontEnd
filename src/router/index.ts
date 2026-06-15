@@ -56,7 +56,15 @@ const routes: Array<RouteRecordRaw> = [
         name: 'calcular-peso',
         component: () => import('@/modules/pesajes/pages/CalcularPesoPage.vue'),
         meta: {
-          roles: ['ganadero'],
+          roles: ['ganadero', 'asistente'],
+        },
+      },
+      {
+        path: 'reporte-compartido',
+        name: 'shared-report',
+        component: () => import('@/modules/reportes/pages/SharedReportPage.vue'),
+        meta: {
+          roles: ['admin', 'ganadero'],
         },
       },
       {

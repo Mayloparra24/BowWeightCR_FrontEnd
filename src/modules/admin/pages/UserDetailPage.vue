@@ -41,6 +41,9 @@
           <article>
             <h3>Estado</h3>
             <span class="status-pill" :class="user.status">{{ user.status }}</span>
+            <button class="status-action" type="button" @click="toggleStatus">
+              {{ user.status === 'activo' ? 'Desactivar cuenta' : 'Activar cuenta' }}
+            </button>
           </article>
         </section>
 
@@ -95,7 +98,19 @@ const roleLabel = (role: Rol) => {
     return 'Admin';
   }
 
+  if (role === 'asistente') {
+    return 'Asistente';
+  }
+
   return 'Ganadero';
+};
+
+const toggleStatus = () => {
+  if (!user.value) {
+    return;
+  }
+
+  user.value.status = user.value.status === 'activo' ? 'inactivo' : 'activo';
 };
 </script>
 
@@ -232,6 +247,19 @@ h3 {
   background: #ff7373;
   color: #571010;
   text-transform: capitalize;
+}
+
+.status-action {
+  display: block;
+  min-height: 36px;
+  margin-top: 12px;
+  border: 0;
+  border-radius: 8px;
+  background: #052b66;
+  color: #ffffff;
+  padding: 0 14px;
+  font-size: 12px;
+  font-weight: 900;
 }
 
 .empty-state {

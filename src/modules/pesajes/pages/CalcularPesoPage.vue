@@ -19,6 +19,10 @@
           </div>
         </header>
 
+        <p v-if="!isOnline" class="offline-banner">
+          Sin conexión: la foto quedó guardada y se enviará cuando tenga internet.
+        </p>
+
         <!-- Paso 1: capturar fotografia -->
         <section v-if="step === 'foto'" class="photo-step">
           <div class="photo-frame" :class="{ filled: photoUrl }">
@@ -146,6 +150,14 @@
             </label>
 
             <label>
+              <span>Estado</span>
+              <select v-model="nuevo.status">
+                <option value="Activo">Activo</option>
+                <option value="Inactivo">Inactivo</option>
+              </select>
+            </label>
+
+            <label>
               <span>Fecha de nacimiento</span>
               <input v-model="nuevo.birthDate" type="date" :max="hoyIso" />
             </label>
@@ -218,6 +230,9 @@
             Se registró un peso de {{ pesoGuardado }} Kg para {{ resultadoBovinoNombre }}
             en su historial.
           </p>
+          <p v-if="offlineQueued" class="sync-note">
+            Quedó pendiente de sincronización cuando vuelva internet.
+          </p>
 
           <div class="success-actions">
             <router-link v-if="bovinoGuardadoId" class="primary-button" :to="`/app/bovinos/${bovinoGuardadoId}`">
@@ -239,6 +254,7 @@ import { useRouter } from 'vue-router';
 import { currentUser } from '@/modules/auth/services/sessionService';
 import { bovinos, fincas } from '@/shared/data/mockData';
 import type { Bovino } from '@/shared/types/domain';
+import { enqueueOfflineItem, isOnline } from '@/shared/services/offlineService';
 import {
   estimarPesoBovinoExistente,
   estimarPesoBovinoNuevo,
@@ -267,6 +283,7 @@ const nuevo = reactive({
   farmId: '',
   breed: '',
   sex: 'Macho' as Bovino['sex'],
+  status: 'Activo' as Bovino['status'],
   birthDate: '',
   notes: '',
 });
@@ -278,6 +295,7 @@ const editandoPeso = ref(false);
 const pesoGuardado = ref(0);
 const bovinoGuardadoId = ref('');
 const formError = ref('');
+const offlineQueued = ref(false);
 
 const assignedFarmIds = computed(() => currentUser.value?.assignedFarmIds ?? []);
 const fincasAsignadas = computed(() => fincas.filter((farm) => assignedFarmIds.value.includes(farm.id)));
@@ -437,6 +455,7 @@ const cancelarResultado = () => {
 
 const guardar = () => {
   formError.value = '';
+  offlineQueued.value = false;
 
   const pesoFinal = editandoPeso.value ? Math.round(pesoCorregido.value) : pesoEstimado.value;
 
@@ -455,6 +474,7 @@ const guardar = () => {
         farmId: nuevo.farmId,
         breed: nuevo.breed,
         sex: nuevo.sex,
+        status: nuevo.status,
         birthDate: nuevo.birthDate,
         notes: nuevo.notes,
         photoUrl: photoUrl.value || FOTO_GENERICA,
@@ -467,6 +487,14 @@ const guardar = () => {
 
     const fuente = editandoPeso.value && pesoFinal !== pesoEstimado.value ? 'Manual' : 'IA';
     guardarPesaje(bovino, pesoFinal, fuente);
+
+    if (!isOnline.value) {
+      enqueueOfflineItem({
+        type: 'pesaje',
+        description: `${bovino.name} - ${pesoFinal} Kg`,
+      });
+      offlineQueued.value = true;
+    }
 
     pesoGuardado.value = pesoFinal;
     bovinoGuardadoId.value = bovino.id;
@@ -645,6 +673,23 @@ const guardar = () => {
   color: var(--bw-error-text, #b42318);
   font-size: 11px;
   font-weight: 800;
+}
+
+.offline-banner,
+.sync-note {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #fff4d6;
+  color: #7a4b00;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.35;
+}
+
+.sync-note {
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .empty-note {
