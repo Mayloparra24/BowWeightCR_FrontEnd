@@ -132,12 +132,12 @@
           </div>
           <h2>Usuario creado</h2>
           
-          <p v-if="selectedRole === 'veterinario'">
+          <p v-if="selectedRole === 'veterinario' || selectedRole === 'asistente'">
           Se preparó la cuenta de {{ cleanFullName }} con acceso a {{ selectedFarmIds.length }}
           {{ selectedFarmIds.length === 1 ? 'finca' : 'fincas' }}.
           </p>
           <p v-else>
-          Se preparó la cuenta de {{ cleanFullName }} con el rol de Ganadero listo para operar.
+          Se preparó la cuenta de {{ cleanFullName }} con el rol de {{ roleLabel }} listo para operar.
           </p>
 
           <section class="account-card">
@@ -160,7 +160,7 @@
                   <span>{{ roleLabel }}</span>
                 </dd>
               </div>
-              <div v-if="selectedRole === 'veterinario'">
+              <div v-if="selectedRole === 'veterinario' || selectedRole === 'asistente'">
                 <dt>Fincas</dt>
                 <dd>{{ selectedFarmIds.length }} asignadas</dd>
               </div>
@@ -206,6 +206,7 @@ const ganaderoIcon = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000
 // 2. Pasamos el icono al arreglo de roles
 const roles: Array<{ label: string; value: Exclude<Rol, 'admin'>; icon: string }> = [
   { label: 'Ganadero', value: 'ganadero', icon: ganaderoIcon }, // <-- Ahora usa el nuevo SVG
+  { label: 'Asistente', value: 'asistente', icon: idCardOutline },
   { label: 'Veterinario', value: 'veterinario', icon: pulseOutline },
 ];
 
@@ -221,7 +222,10 @@ const selectedFarmIds = ref<string[]>([]);
 
 const cleanFullName = computed(() => fullName.value.trim());
 const cleanEmail = computed(() => email.value.trim().toLowerCase());
-const roleLabel = computed(() => (selectedRole.value === 'veterinario' ? 'Veterinario' : 'Ganadero'));
+const roleLabel = computed(() => {
+  const option = roles.find((item) => item.value === selectedRole.value);
+  return option?.label ?? 'Usuario';
+});
 
 onIonViewWillEnter(() => {
   resetForm();

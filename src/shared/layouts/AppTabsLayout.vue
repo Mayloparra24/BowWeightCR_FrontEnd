@@ -29,7 +29,15 @@ import {
   IonTabs,
 } from '@ionic/vue';
 import { computed } from 'vue';
-import { businessOutline, cogOutline, home, layersOutline, listOutline, personOutline } from 'ionicons/icons';
+import {
+  businessOutline,
+  cameraOutline,
+  cogOutline,
+  home,
+  layersOutline,
+  listOutline,
+  personOutline,
+} from 'ionicons/icons';
 import { currentUser } from '@/modules/auth/services/sessionService';
 
 const navItems = computed(() => {
@@ -48,6 +56,15 @@ const navItems = computed(() => {
     return [
       { tab: 'inicio', href: '/app/inicio', label: 'Inicio', icon: home },
       { tab: 'fincas', href: '/app/fincas', label: 'Fincas', icon: layersOutline },
+      { tab: 'configuracion', href: '/app/configuracion', label: 'Config.', icon: cogOutline },
+    ];
+  }
+
+  if (role === 'asistente') {
+    return [
+      { tab: 'inicio', href: '/app/inicio', label: 'Inicio', icon: home },
+      { tab: 'bovinos', href: '/app/bovinos', label: 'Buscar', icon: businessOutline },
+      { tab: 'calcular-peso', href: '/app/calcular-peso', label: 'Foto', icon: cameraOutline },
       { tab: 'configuracion', href: '/app/configuracion', label: 'Config.', icon: cogOutline },
     ];
   }

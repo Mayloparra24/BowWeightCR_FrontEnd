@@ -46,7 +46,14 @@ import { computed, ref } from 'vue';
 const filters = ['Todos', 'Sesiones', 'Bovinos', 'Usuarios', 'Errores'];
 const selectedFilter = ref('Todos');
 
-const events: Array<{ id: string; category: string; message: string; date: string }> = [];
+const events: Array<{ id: string; category: string; message: string; date: string }> = [
+  { id: 'log-1', category: 'Sesiones', message: 'Inicio de sesión exitoso.', date: 'Hoy' },
+  { id: 'log-2', category: 'Bovinos', message: 'Foto enviada para estimación de peso.', date: 'Hoy' },
+  { id: 'log-3', category: 'Bovinos', message: 'Estimación generada correctamente.', date: 'Hoy' },
+  { id: 'log-4', category: 'Errores', message: 'Error al procesar fotografía.', date: 'Ayer' },
+  { id: 'log-5', category: 'Usuarios', message: 'Cuenta de usuario desactivada.', date: 'Ayer' },
+  { id: 'log-6', category: 'Errores', message: 'El servidor no respondió.', date: 'Ayer' },
+];
 
 const visibleEvents = computed(() => {
   if (selectedFilter.value === 'Todos') {
