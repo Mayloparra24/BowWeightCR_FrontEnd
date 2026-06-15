@@ -99,7 +99,7 @@
                 class="animal-row"
                 to="/app/bovinos"
               >
-                <img :src="bovino.photoUrl" alt="" />
+                <img :src="bovinoPhoto(bovino.photoUrl)" alt="" @error="onBovinoPhotoError" />
                 <span>
                   <strong>{{ bovino.name }}</strong>
                   <small>Finca<br />{{ farmName(bovino.farmId) }}</small>
@@ -145,7 +145,7 @@
                 class="animal-row"
                 :to="`/app/bovinos/${bovino.id}`"
               >
-                <img :src="bovino.photoUrl" alt="" />
+                <img :src="bovinoPhoto(bovino.photoUrl)" alt="" @error="onBovinoPhotoError" />
                 <span>
                   <strong>{{ bovino.name }}</strong>
                   <small>{{ bovino.earTag }}<br />{{ farmName(bovino.farmId) }}</small>
@@ -231,7 +231,7 @@
                 class="animal-row"
                 :to="`/app/bovinos/${bovino.id}`"
               >
-                <img :src="bovino.photoUrl" alt="" />
+                <img :src="bovinoPhoto(bovino.photoUrl)" alt="" @error="onBovinoPhotoError" />
                 <span>
                   <strong>{{ bovino.name }}</strong>
                   <small>{{ bovino.lastWeightDate }}<br />{{ farmName(bovino.farmId) }}</small>
@@ -261,6 +261,7 @@ import {
 import { computed } from 'vue';
 import { currentUser } from '@/modules/auth/services/sessionService';
 import { bovinos, fincas, registrosPeso, usuariosDemo } from '@/shared/data/mockData';
+import { bovinoPhoto, onBovinoPhotoError } from '@/shared/utils/bovinoPhoto';
 import {
   isOnline,
   markOfflineQueueSynced,

@@ -363,11 +363,21 @@ const onPhotoSelected = (event: Event) => {
     return;
   }
 
+  // Liberar cualquier blob previo (si quedara de una version anterior).
   if (photoUrl.value.startsWith('blob:')) {
     URL.revokeObjectURL(photoUrl.value);
   }
 
-  photoUrl.value = URL.createObjectURL(file);
+  // Se guarda como data URL (base64) en lugar de un blob: objectURL.
+  // Un blob: solo es valido en la sesion que lo creo, asi que la foto se veria
+  // rota en otras vistas/usuarios o tras refrescar. El base64 viaja dentro del
+  // propio string photoUrl y se renderiza en cualquier lado.
+  const reader = new FileReader();
+  reader.onload = () => {
+    photoUrl.value = typeof reader.result === 'string' ? reader.result : '';
+  };
+  reader.readAsDataURL(file);
+
   setTimeout(() => {
     if (fileInput.value) {
       fileInput.value.value = '';

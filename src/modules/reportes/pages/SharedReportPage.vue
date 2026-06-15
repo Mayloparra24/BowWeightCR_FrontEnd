@@ -31,7 +31,7 @@
 
         <section class="report-list">
           <article v-for="bovino in visibleBovinos" :key="bovino.id" class="report-card">
-            <img :src="bovino.photoUrl" :alt="`Foto de ${bovino.name}`" />
+            <img :src="bovinoPhoto(bovino.photoUrl)" :alt="`Foto de ${bovino.name}`" @error="onBovinoPhotoError" />
             <div>
               <h2>{{ bovino.name }}</h2>
               <p>{{ bovino.earTag }}</p>
@@ -52,7 +52,8 @@ import { documentTextOutline, downloadOutline, shareSocialOutline } from 'ionico
 import { computed } from 'vue';
 import { bovinos, fincas } from '@/shared/data/mockData';
 import { currentUser } from '@/modules/auth/services/sessionService';
-import { exportInventarioCsv } from '@/shared/services/reportService';
+import { exportInventarioCsv, exportInventarioPdf, shareInventarioPdf } from '@/shared/services/reportService';
+import { bovinoPhoto, onBovinoPhotoError } from '@/shared/utils/bovinoPhoto';
 
 const assignedFarmIds = computed(() => currentUser.value?.assignedFarmIds ?? ['farm-esperanza']);
 const visibleBovinos = computed(() => {
@@ -69,27 +70,16 @@ const fincaName = computed(() => {
 
 const farmName = (farmId: string) => fincas.find((finca) => finca.id === farmId)?.name ?? 'Sin finca';
 
-const exportCsv = () => {
-  exportInventarioCsv(visibleBovinos.value, fincas);
+const exportCsv = async () => {
+  await exportInventarioCsv(visibleBovinos.value, fincas);
 };
 
-const printReport = () => {
-  window.print();
+const printReport = async () => {
+  await exportInventarioPdf(visibleBovinos.value, fincas, fincaName.value);
 };
 
 const shareReport = async () => {
-  const text = [
-    'Reporte BovWeightCR',
-    ...visibleBovinos.value.map((bovino) => `${bovino.name} - ${bovino.lastWeightKg} kg - ${farmName(bovino.farmId)}`),
-    'El peso mostrado es una estimación y no sustituye el pesaje oficial en báscula.',
-  ].join('\n');
-
-  if (navigator.share) {
-    await navigator.share({ title: 'Reporte BovWeightCR', text });
-    return;
-  }
-
-  window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
+  await shareInventarioPdf(visibleBovinos.value, fincas, fincaName.value);
 };
 </script>
 

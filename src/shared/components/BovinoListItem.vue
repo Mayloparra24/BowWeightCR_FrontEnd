@@ -1,6 +1,6 @@
 <template>
   <article class="animal-item">
-    <img :src="bovino.photoUrl" :alt="`Foto de ${bovino.name}`" />
+    <img :src="bovinoPhoto(bovino.photoUrl)" :alt="`Foto de ${bovino.name}`" @error="onBovinoPhotoError" />
 
     <div class="animal-main">
       <div class="animal-title-row">
@@ -18,6 +18,7 @@
 
 <script setup lang="ts">
 import type { Bovino } from '@/shared/types/domain';
+import { bovinoPhoto, onBovinoPhotoError } from '@/shared/utils/bovinoPhoto';
 
 defineProps<{
   bovino: Bovino;
