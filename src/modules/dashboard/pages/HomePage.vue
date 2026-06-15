@@ -9,8 +9,9 @@
           </div>
 
           <div class="header-actions">
-            <button type="button" aria-label="Notificaciones">
+            <button type="button" aria-label="Notificaciones" class="notification-button">
               <ion-icon :icon="notificationsOutline" />
+              <span v-if="notificationCount">{{ notificationCount }}</span>
             </button>
             <div v-if="!isAdmin" class="user-avatar">{{ userInitials }}</div>
             <router-link v-if="isAdmin" to="/app/configuracion" aria-label="Configuración">
@@ -48,7 +49,10 @@
 
           <section class="alerts-section">
             <h1>Alertas del sistema</h1>
-            <p class="empty-state">Sin alertas registradas.</p>
+            <div class="admin-alert-list">
+              <p>Error al procesar fotografía en una estimación.</p>
+              <p>No se pudo sincronizar la información de un pesaje.</p>
+            </div>
           </section>
 
           <section class="events-section">
@@ -56,7 +60,12 @@
               <h2>Últimos eventos</h2>
               <router-link to="/app/bitacora">Ver Bitácora</router-link>
             </div>
-            <p class="empty-state dark">Sin eventos registrados.</p>
+            <div class="event-list">
+              <article v-for="event in adminEvents" :key="event.id">
+                <span>{{ event.message }}</span>
+                <time>{{ event.date }}</time>
+              </article>
+            </div>
           </section>
         </template>
 
@@ -103,6 +112,50 @@
           </section>
         </section>
 
+        <section v-else-if="isAssistant" class="vet-home">
+          <p class="notice">Solo puedes capturar fotos y consultar animales de tus fincas asignadas.</p>
+
+          <router-link class="photo-card" to="/app/calcular-peso">
+            <span>Captura rápida</span>
+            <strong>Tomar foto</strong>
+            <small>Guarda pendiente si no hay conexión</small>
+            <ion-icon :icon="cameraOutline" />
+          </router-link>
+
+          <section class="sync-section">
+            <div>
+              <strong>{{ pendingOfflineItems.length }} pendiente{{ pendingOfflineItems.length === 1 ? '' : 's' }}</strong>
+              <span>{{ isOnline ? 'Conexión disponible' : 'Sin conexión' }}</span>
+            </div>
+            <button type="button" :disabled="!isOnline || !pendingOfflineItems.length" @click="markOfflineQueueSynced">
+              Enviar
+            </button>
+          </section>
+
+          <section class="activity-section">
+            <div class="activity-heading">
+              <h1>Buscar animal</h1>
+              <router-link to="/app/bovinos">Abrir lista</router-link>
+            </div>
+
+            <div v-if="bovinosRecientes.length" class="animal-feed">
+              <router-link
+                v-for="bovino in bovinosRecientes"
+                :key="bovino.id"
+                class="animal-row"
+                :to="`/app/bovinos/${bovino.id}`"
+              >
+                <img :src="bovino.photoUrl" alt="" />
+                <span>
+                  <strong>{{ bovino.name }}</strong>
+                  <small>{{ bovino.earTag }}<br />{{ farmName(bovino.farmId) }}</small>
+                </span>
+                <b>{{ bovino.lastWeightKg }} <small>Kg</small></b>
+              </router-link>
+            </div>
+          </section>
+        </section>
+
         <section v-else class="farmer-home">
           <router-link class="photo-card" to="/app/calcular-peso">
             <span>Nuevo cálculo</span>
@@ -127,6 +180,42 @@
               <strong>{{ averageWeight }} <small>kg</small></strong>
               <small>Peso promedio en tus fincas</small>
             </article>
+          </section>
+
+          <section v-if="pendingOfflineItems.length" class="sync-section">
+            <div>
+              <strong>{{ pendingOfflineItems.length }} pendiente{{ pendingOfflineItems.length === 1 ? '' : 's' }}</strong>
+              <span>{{ isOnline ? 'Listo para sincronizar' : 'Guardado sin conexión' }}</span>
+            </div>
+            <button type="button" :disabled="!isOnline" @click="markOfflineQueueSynced">
+              Sincronizar
+            </button>
+          </section>
+
+          <section class="reminder-section">
+            <div class="activity-heading">
+              <h1>Recordatorios</h1>
+              <router-link to="/app/bovinos">Ver bovinos</router-link>
+            </div>
+
+            <div v-if="reminders.length" class="reminder-list">
+              <router-link
+                v-for="reminder in reminders"
+                :key="reminder.bovino.id"
+                class="reminder-row"
+                :to="`/app/bovinos/${reminder.bovino.id}`"
+              >
+                <span class="reminder-icon">
+                  <ion-icon :icon="calendarOutline" />
+                </span>
+                <span>
+                  <strong>{{ reminder.bovino.name }}</strong>
+                  <small>{{ reminder.message }}</small>
+                </span>
+              </router-link>
+            </div>
+
+            <p v-else class="empty-state">No hay recordatorios de pesaje pendientes.</p>
           </section>
 
           <section class="activity-section">
@@ -163,6 +252,7 @@
 import { IonContent, IonIcon, IonPage } from '@ionic/vue';
 import {
   cameraOutline,
+  calendarOutline,
   cubeOutline,
   notificationsOutline,
   settingsOutline,
@@ -170,15 +260,26 @@ import {
 } from 'ionicons/icons';
 import { computed } from 'vue';
 import { currentUser } from '@/modules/auth/services/sessionService';
-import { bovinos, fincas } from '@/shared/data/mockData';
+import { bovinos, fincas, registrosPeso, usuariosDemo } from '@/shared/data/mockData';
+import {
+  isOnline,
+  markOfflineQueueSynced,
+  pendingOfflineCount,
+  pendingOfflineItems,
+} from '@/shared/services/offlineService';
 
 const userName = computed(() => currentUser.value?.fullName ?? 'Usuario');
 const isAdmin = computed(() => currentUser.value?.role === 'admin');
+const isAssistant = computed(() => currentUser.value?.role === 'asistente');
 const isVet = computed(() => currentUser.value?.role === 'veterinario');
 
 const headerSubtitle = computed(() => {
   if (isAdmin.value) {
     return 'Panel de administrador';
+  }
+
+  if (isAssistant.value) {
+    return 'Captura de campo';
   }
 
   if (isVet.value) {
@@ -204,16 +305,35 @@ const userInitials = computed(() => {
 });
 
 const adminStats = computed(() => ({
-  users: 0,
-  fincas: 0,
-  bovinos: 0,
-  estimates: 0,
+  users: usuariosDemo.length,
+  fincas: fincas.length,
+  bovinos: bovinos.filter((bovino) => bovino.status === 'Activo').length,
+  estimates: registrosPeso.length,
 }));
+const adminEvents = [
+  { id: 'event-login', message: 'Inicio de sesión de Ivan Chavarria.', date: 'Hoy' },
+  { id: 'event-photo', message: 'Foto enviada para estimación de peso.', date: 'Hoy' },
+  { id: 'event-error', message: 'No se pudo sincronizar la información.', date: 'Ayer' },
+];
 
 const assignedFarmIds = computed(() => currentUser.value?.assignedFarmIds ?? []);
 const fincasAsignadas = computed(() => fincas.filter((finca) => assignedFarmIds.value.includes(finca.id)));
 const bovinosAsignados = computed(() => bovinos.filter((bovino) => assignedFarmIds.value.includes(bovino.farmId)));
 const bovinosRecientes = computed(() => bovinosAsignados.value.slice(0, 2));
+const reminders = computed(() => {
+  return bovinosAsignados.value
+    .filter((bovino) => daysSinceLastWeight(bovino.lastWeightDate) >= 90 || bovino.lastWeightKg === 0)
+    .slice(0, 3)
+    .map((bovino) => {
+      const days = daysSinceLastWeight(bovino.lastWeightDate);
+      const message = bovino.lastWeightKg === 0
+        ? 'Aún no tiene pesaje registrado.'
+        : `Último pesaje hace ${days} días.`;
+
+      return { bovino, message };
+    });
+});
+const notificationCount = computed(() => reminders.value.length + pendingOfflineCount.value);
 
 const vetStats = computed(() => ({
   fincas: fincasAsignadas.value.length,
@@ -245,6 +365,21 @@ const assignedFarmNames = computed(() => {
 const farmName = (farmId: string) => {
   return fincas.find((finca) => finca.id === farmId)?.name ?? 'Sin finca';
 };
+
+function daysSinceLastWeight(value: string) {
+  if (!value) {
+    return 999;
+  }
+
+  const [day, month, year] = value.split('/').map(Number);
+  const date = new Date(year, month - 1, day);
+
+  if (Number.isNaN(date.getTime())) {
+    return 999;
+  }
+
+  return Math.floor((Date.now() - date.getTime()) / 86_400_000);
+}
 </script>
 
 <style scoped>
@@ -298,6 +433,7 @@ const farmName = (farmId: string) => {
 
 .header-actions button,
 .header-actions a {
+  position: relative;
   width: 38px;
   height: 38px;
   display: grid;
@@ -307,6 +443,21 @@ const farmName = (farmId: string) => {
   background: #ffffff;
   color: #08254a;
   box-shadow: 0 10px 22px rgba(8, 37, 74, 0.08);
+}
+
+.notification-button span {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #b42318;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 900;
 }
 
 .header-actions ion-icon {
@@ -421,6 +572,46 @@ const farmName = (farmId: string) => {
   border-color: rgba(207, 224, 245, 0.18);
   color: #cfe0f5;
   box-shadow: 0 16px 26px rgba(7, 24, 50, 0.2);
+}
+
+.admin-alert-list,
+.event-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.admin-alert-list p {
+  margin: 0;
+  padding: 12px;
+  border-left: 4px solid #b42318;
+  border-radius: 8px;
+  background: #fff1f0;
+  color: #7a271a;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.event-list {
+  padding: 14px;
+  border-radius: 8px;
+  background: #071832;
+  box-shadow: 0 16px 26px rgba(7, 24, 50, 0.2);
+}
+
+.event-list article {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  color: #dbe8f7;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.event-list time {
+  color: #ffffff;
+  font-weight: 900;
+  white-space: nowrap;
 }
 
 .section-heading {
@@ -580,6 +771,128 @@ const farmName = (farmId: string) => {
 .animal-row b small {
   color: #071832;
   font-size: 12px;
+}
+
+.reminder-section {
+  display: grid;
+  gap: 12px;
+}
+
+.reminder-section .activity-heading {
+  min-height: 28px;
+}
+
+.reminder-section h1 {
+  margin: 0;
+  color: #08254a;
+  font-size: 17px;
+  font-weight: 900;
+}
+
+.reminder-section a:not(.reminder-row) {
+  color: #052b66;
+  font-size: 11px;
+  font-weight: 800;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.sync-section {
+  min-height: 58px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  border-radius: 8px;
+  background: #071832;
+  color: #ffffff;
+  box-shadow: 0 14px 24px rgba(8, 37, 74, 0.12);
+}
+
+.sync-section strong,
+.sync-section span {
+  display: block;
+}
+
+.sync-section strong {
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.sync-section span {
+  margin-top: 2px;
+  color: #cfe0f5;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.sync-section button {
+  min-height: 34px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 8px;
+  background: #d8e8f7;
+  color: #052b66;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.sync-section button:disabled {
+  opacity: 0.5;
+}
+
+.reminder-list {
+  display: grid;
+  gap: 10px;
+}
+
+.reminder-row {
+  min-height: 64px;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  padding: 9px 12px;
+  border-left: 4px solid #2f75b5;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #071832;
+  text-decoration: none;
+  box-shadow: 0 12px 24px rgba(8, 37, 74, 0.08);
+}
+
+.reminder-icon {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: #d8e8f7;
+  color: #052b66;
+}
+
+.reminder-icon ion-icon {
+  font-size: 24px;
+}
+
+.reminder-row strong,
+.reminder-row small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.reminder-row strong {
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.reminder-row small {
+  margin-top: 2px;
+  color: #566071;
+  font-size: 11px;
+  font-weight: 800;
 }
 
 .farmer-home {

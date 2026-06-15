@@ -21,22 +21,56 @@
             <span>{{ bovino.status }}</span>
           </section>
 
+          <section v-if="canManageStatus" class="status-section">
+            <h2>Estado del animal</h2>
+            <div class="status-actions">
+              <button
+                v-for="option in statusOptions"
+                :key="option"
+                type="button"
+                :class="{ active: bovino.status === option }"
+                @click="bovino.status = option"
+              >
+                {{ option }}
+              </button>
+            </div>
+          </section>
+
           <section class="chart-section">
             <h2>
               <ion-icon :icon="analyticsOutline" />
               Evolución de peso
             </h2>
-            <div class="weight-chart" aria-label="Gráfico de evolución de peso">
-              <span
+            <p class="trend-pill" :class="trendTone">{{ trendLabel }}</p>
+            <div v-if="orderedRecords.length" class="weight-chart" aria-label="Gráfico de evolución de peso">
+              <div
                 v-for="record in orderedRecords"
                 :key="record.id"
-                :style="{ height: `${barHeight(record.weightKg)}%` }"
-              ></span>
+                class="chart-point"
+              >
+                <span>{{ record.weightKg }}</span>
+                <b :style="{ height: `${barHeight(record.weightKg)}%` }"></b>
+                <small>{{ shortDate(record.date) }}</small>
+              </div>
             </div>
+            <p v-else class="empty-note">No hay datos suficientes para graficar.</p>
           </section>
 
           <section class="history-section">
-            <h2>Historial de pesos</h2>
+            <div class="section-title">
+              <h2>Historial de pesos</h2>
+              <div class="report-actions">
+                <button type="button" aria-label="Exportar CSV" @click="exportarCsv">
+                  <ion-icon :icon="downloadOutline" />
+                </button>
+                <button type="button" aria-label="Generar PDF" @click="generarPdf">
+                  <ion-icon :icon="documentTextOutline" />
+                </button>
+                <button type="button" aria-label="Compartir reporte" @click="compartirReporte">
+                  <ion-icon :icon="shareSocialOutline" />
+                </button>
+              </div>
+            </div>
             <div v-if="orderedRecords.length" class="history-panel">
               <div class="table-head">
                 <span>Fecha</span>
@@ -54,7 +88,12 @@
             <p v-else class="empty-note">No hay pesos registrados para este bovino.</p>
           </section>
 
-          <p class="info-note">Solo lectura - No se pueden editar pesos desde este perfil.</p>
+          <section class="observations-section">
+            <h2>Observaciones</h2>
+            <p>{{ bovino.observations || 'Sin observaciones registradas.' }}</p>
+          </section>
+
+          <p class="info-note">El peso mostrado es una estimación y no sustituye el pesaje oficial en báscula.</p>
         </template>
 
         <section v-else class="empty-state">
@@ -68,11 +107,24 @@
 
 <script setup lang="ts">
 import { IonContent, IonIcon, IonPage } from '@ionic/vue';
-import { analyticsOutline, chevronBackOutline } from 'ionicons/icons';
+import {
+  analyticsOutline,
+  chevronBackOutline,
+  documentTextOutline,
+  downloadOutline,
+  shareSocialOutline,
+} from 'ionicons/icons';
 import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { currentUser } from '@/modules/auth/services/sessionService';
-import { bovinos, registrosPeso } from '@/shared/data/mockData';
+import { bovinos, fincas, registrosPeso } from '@/shared/data/mockData';
+import type { Bovino } from '@/shared/types/domain';
+import {
+  exportBovinoCsv,
+  printBovinoReport,
+  shareBovinoReport,
+  type ReporteBovino,
+} from '@/shared/services/reportService';
 
 const route = useRoute();
 const assignedFarmIds = computed(() => currentUser.value?.assignedFarmIds ?? []);
@@ -88,13 +140,89 @@ const orderedRecords = computed(() => {
     return [];
   }
 
-  return registrosPeso.filter((record) => record.bovinoId === bovino.value?.id);
+  return registrosPeso
+    .filter((record) => record.bovinoId === bovino.value?.id)
+    .sort((a, b) => parseRecordDate(a.date).getTime() - parseRecordDate(b.date).getTime());
 });
 
 const maxWeight = computed(() => Math.max(...orderedRecords.value.map((record) => record.weightKg), 1));
+const finca = computed(() => fincas.find((item) => item.id === bovino.value?.farmId));
+const canManageStatus = computed(() => currentUser.value?.role === 'ganadero');
+const statusOptions: Bovino['status'][] = ['Activo', 'Vendido', 'Fallecido', 'Inactivo'];
+const trendLabel = computed(() => {
+  if (orderedRecords.value.length < 2) {
+    return 'Sin datos suficientes';
+  }
+
+  const first = orderedRecords.value[0];
+  const last = orderedRecords.value.at(-1);
+
+  if (!last) {
+    return 'Sin datos suficientes';
+  }
+
+  const difference = last.weightKg - first.weightKg;
+
+  if (difference > 12) {
+    return 'Aumento de peso';
+  }
+
+  if (difference < -12) {
+    return 'Posible baja de peso';
+  }
+
+  return 'Peso estable';
+});
+const trendTone = computed(() => {
+  if (trendLabel.value === 'Aumento de peso') {
+    return 'good';
+  }
+
+  if (trendLabel.value === 'Posible baja de peso') {
+    return 'warning';
+  }
+
+  return 'neutral';
+});
+const reporte = computed<ReporteBovino | null>(() => {
+  if (!bovino.value) {
+    return null;
+  }
+
+  return {
+    bovino: bovino.value,
+    finca: finca.value,
+    registros: [...orderedRecords.value].reverse(),
+  };
+});
 
 const barHeight = (weight: number) => {
   return Math.max(24, Math.round((weight / maxWeight.value) * 100));
+};
+
+function parseRecordDate(value: string) {
+  const [day, month, year] = value.split('/').map(Number);
+  return new Date(year, month - 1, day);
+}
+
+const shortDate = (value: string) => value.split('/').slice(0, 2).join('/');
+
+const exportarCsv = () => {
+  if (reporte.value) {
+    exportBovinoCsv(reporte.value);
+  }
+};
+
+const generarPdf = () => {
+  if (reporte.value) {
+    printBovinoReport(reporte.value);
+  }
+};
+
+const compartirReporte = async () => {
+  if (reporte.value) {
+    await shareBovinoReport(reporte.value);
+  }
 };
 </script>
 
@@ -187,13 +315,17 @@ h1 {
 }
 
 .chart-section,
-.history-section {
+.history-section,
+.status-section,
+.observations-section {
   display: grid;
   gap: 12px;
 }
 
 .chart-section h2,
-.history-section h2 {
+.history-section h2,
+.status-section h2,
+.observations-section h2 {
   margin: 0;
   color: #052b66;
   font-size: 15px;
@@ -207,12 +339,35 @@ h1 {
   font-size: 12px;
 }
 
+.trend-pill {
+  width: max-content;
+  margin: 0;
+  border-radius: 999px;
+  padding: 6px 10px;
+  color: #052b66;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.trend-pill.good {
+  background: #d8f3dc;
+}
+
+.trend-pill.warning {
+  background: #fff4d6;
+  color: #7a4b00;
+}
+
+.trend-pill.neutral {
+  background: #d8e8f7;
+}
+
 .weight-chart {
-  height: 112px;
+  min-height: 148px;
   display: flex;
-  align-items: end;
-  gap: 18px;
-  padding: 16px;
+  align-items: stretch;
+  gap: 12px;
+  padding: 12px 10px;
   border-top: 2px solid #6e83a6;
   border-bottom: 2px solid #6e83a6;
   background:
@@ -220,19 +375,96 @@ h1 {
     #ffffff;
 }
 
-.weight-chart span {
+.chart-point {
+  flex: 1 1 0;
+  min-width: 0;
+  display: grid;
+  grid-template-rows: 20px 1fr 18px;
+  justify-items: center;
+  align-items: end;
+  gap: 4px;
+}
+
+.chart-point span {
+  color: #052b66;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.chart-point b {
   width: 18px;
   min-height: 18px;
   border-radius: 4px 4px 0 0;
   background: #5b8fc0;
 }
 
-.weight-chart span:last-child {
+.chart-point:last-child b {
   background: #052b66;
+}
+
+.chart-point small {
+  color: #566071;
+  font-size: 9px;
+  font-weight: 800;
 }
 
 .history-section {
   margin-top: 22px;
+}
+
+.status-section {
+  margin-bottom: 22px;
+}
+
+.status-actions {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.status-actions button {
+  min-height: 34px;
+  border: 1px solid rgba(8, 37, 74, 0.12);
+  border-radius: 999px;
+  background: #ffffff;
+  color: #052b66;
+  padding: 0 12px;
+  font-size: 10px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.status-actions button.active {
+  background: #052b66;
+  color: #ffffff;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.report-actions {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.report-actions button {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(8, 37, 74, 0.12);
+  border-radius: 8px;
+  background: #ffffff;
+  color: #052b66;
+}
+
+.report-actions ion-icon {
+  font-size: 17px;
 }
 
 .history-panel {
@@ -276,6 +508,22 @@ h1 {
   color: #052b66;
   font-size: 10px;
   font-weight: 900;
+}
+
+.observations-section {
+  margin-top: 18px;
+  padding: 14px;
+  border-radius: 8px;
+  background: #ffffff;
+  border: 1px solid rgba(8, 37, 74, 0.08);
+}
+
+.observations-section p {
+  margin: 0;
+  color: #566071;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
 }
 
 .info-note {

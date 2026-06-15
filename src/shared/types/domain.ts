@@ -1,4 +1,4 @@
-export type Rol = 'ganadero' | 'veterinario' | 'admin';
+export type Rol = 'ganadero' | 'asistente' | 'veterinario' | 'admin';
 
 export interface Usuario {
   id: string;
@@ -27,6 +27,7 @@ export interface Bovino {
   photoUrl: string;
   lastWeightKg: number;
   lastWeightDate: string;
+  observations?: string;
 }
 
 export interface RegistroPeso {

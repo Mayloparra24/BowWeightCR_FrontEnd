@@ -73,7 +73,7 @@ import type { Rol } from '@/shared/types/domain';
 const users = usuariosAdmin;
 const search = ref('');
 const selectedFilter = ref('Todos');
-const filters = ['Todos', 'Ganaderos', 'Veterinarios', 'Inactivos'];
+const filters = ['Todos', 'Ganaderos', 'Asistentes', 'Veterinarios', 'Administradores', 'Inactivos'];
 
 const activeCount = computed(() => users.filter((user) => user.status === 'activo').length);
 const inactiveCount = computed(() => users.filter((user) => user.status === 'inactivo').length);
@@ -81,6 +81,10 @@ const inactiveCount = computed(() => users.filter((user) => user.status === 'ina
 const roleLabel = (role: Rol) => {
   if (role === 'admin') {
     return 'Admin';
+  }
+
+  if (role === 'asistente') {
+    return 'Asistente';
   }
 
   if (role === 'veterinario') {
@@ -100,7 +104,9 @@ const visibleUsers = computed(() => {
     const matchesFilter =
       selectedFilter.value === 'Todos' ||
       (selectedFilter.value === 'Ganaderos' && user.role === 'ganadero') ||
+      (selectedFilter.value === 'Asistentes' && user.role === 'asistente') ||
       (selectedFilter.value === 'Veterinarios' && user.role === 'veterinario') ||
+      (selectedFilter.value === 'Administradores' && user.role === 'admin') ||
       (selectedFilter.value === 'Inactivos' && user.status === 'inactivo');
 
     return matchesSearch && matchesFilter;
