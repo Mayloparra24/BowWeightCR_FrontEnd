@@ -40,7 +40,7 @@ export const usuariosDemo: Usuario[] = [
   },
 ];
 
-export const fincas: Finca[] = [
+export const fincas: Finca[] = reactive([
   {
     id: 'farm-esperanza',
     name: 'La Esperanza',
@@ -59,7 +59,7 @@ export const fincas: Finca[] = [
     location: 'Liberia',
     cattleCount: 52,
   },
-];
+]);
 
 export const bovinos: Bovino[] = reactive([
   {
