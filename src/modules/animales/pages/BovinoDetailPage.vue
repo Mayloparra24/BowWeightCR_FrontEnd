@@ -21,6 +21,11 @@
             <span>{{ bovino.status }}</span>
           </section>
 
+          <button v-if="canManageStatus" type="button" class="edit-button" @click="abrirEdicion">
+            <ion-icon :icon="createOutline" />
+            Editar información
+          </button>
+
           <section v-if="canManageStatus" class="status-section">
             <h2>Estado del animal</h2>
             <div class="status-actions">
@@ -101,6 +106,46 @@
           <span>Selecciona un bovino visible desde tus fincas asignadas.</span>
         </section>
       </section>
+
+      <!-- Modal de edicion (RF4 / CU-04) -->
+      <div v-if="editando" class="modal-backdrop" @click.self="cerrarEdicion">
+        <form class="modal-card" @submit.prevent="guardarEdicion">
+          <h2>Editar información</h2>
+
+          <label>
+            <span>Nombre del bovino</span>
+            <input v-model="form.name" type="text" placeholder="Nombre" />
+          </label>
+
+          <label>
+            <span>Raza</span>
+            <select v-model="form.breed">
+              <option v-for="raza in razasDisponibles" :key="raza" :value="raza">{{ raza }}</option>
+            </select>
+          </label>
+
+          <label>
+            <span>Sexo</span>
+            <select v-model="form.sex">
+              <option value="Macho">Macho</option>
+              <option value="Hembra">Hembra</option>
+            </select>
+          </label>
+
+          <label>
+            <span>Observaciones</span>
+            <textarea v-model="form.observations" rows="3" placeholder="Notas del animal (opcional)"></textarea>
+          </label>
+
+          <p class="readonly-note">El número de arete no se puede modificar.</p>
+          <p v-if="editError" class="modal-error">{{ editError }}</p>
+
+          <div class="modal-actions">
+            <button type="button" class="modal-cancel" @click="cerrarEdicion">Cancelar</button>
+            <button type="submit" class="modal-save">Guardar cambios</button>
+          </div>
+        </form>
+      </div>
     </ion-content>
   </ion-page>
 </template>
@@ -110,16 +155,19 @@ import { IonContent, IonIcon, IonPage } from '@ionic/vue';
 import {
   analyticsOutline,
   chevronBackOutline,
+  createOutline,
   documentTextOutline,
   downloadOutline,
   shareSocialOutline,
 } from 'ionicons/icons';
-import { computed } from 'vue';
+import { computed, reactive, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { currentUser } from '@/modules/auth/services/sessionService';
 import { bovinos, fincas, registrosPeso } from '@/shared/data/mockData';
 import { bovinoPhoto, onBovinoPhotoError } from '@/shared/utils/bovinoPhoto';
 import type { Bovino } from '@/shared/types/domain';
+import { actualizarBovino } from '@/shared/services/bovinoService';
+import { razasDisponibles } from '@/modules/pesajes/services/estimacionService';
 import {
   exportBovinoCsv,
   printBovinoReport,
@@ -149,6 +197,53 @@ const orderedRecords = computed(() => {
 const maxWeight = computed(() => Math.max(...orderedRecords.value.map((record) => record.weightKg), 1));
 const finca = computed(() => fincas.find((item) => item.id === bovino.value?.farmId));
 const canManageStatus = computed(() => currentUser.value?.role === 'ganadero');
+
+const editando = ref(false);
+const editError = ref('');
+const form = reactive({
+  name: '',
+  breed: '',
+  sex: 'Macho' as Bovino['sex'],
+  observations: '',
+});
+
+const abrirEdicion = () => {
+  if (!bovino.value) {
+    return;
+  }
+
+  form.name = bovino.value.name;
+  form.breed = bovino.value.breed;
+  form.sex = bovino.value.sex;
+  form.observations = bovino.value.observations ?? '';
+  editError.value = '';
+  editando.value = true;
+};
+
+const cerrarEdicion = () => {
+  editando.value = false;
+  editError.value = '';
+};
+
+const guardarEdicion = () => {
+  if (!bovino.value) {
+    return;
+  }
+
+  editError.value = '';
+
+  try {
+    actualizarBovino(bovino.value.id, {
+      name: form.name,
+      breed: form.breed,
+      sex: form.sex,
+      observations: form.observations,
+    });
+    editando.value = false;
+  } catch (error) {
+    editError.value = error instanceof Error ? error.message : 'No fue posible guardar los cambios.';
+  }
+};
 const statusOptions: Bovino['status'][] = ['Activo', 'Vendido', 'Fallecido', 'Inactivo'];
 const trendLabel = computed(() => {
   if (orderedRecords.value.length < 2) {
@@ -572,5 +667,129 @@ h1 {
   max-width: 240px;
   font-size: 12px;
   line-height: 1.4;
+}
+.edit-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 46px;
+  margin-bottom: 18px;
+  border: 1px solid rgba(8, 37, 74, 0.16);
+  border-radius: 999px;
+  background: var(--bw-white, #ffffff);
+  color: var(--bw-primary, #052b66);
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.edit-button ion-icon {
+  font-size: 18px;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(7, 24, 50, 0.45);
+}
+
+.modal-card {
+  width: 100%;
+  max-width: 430px;
+  display: grid;
+  gap: 12px;
+  padding: 20px 18px 22px;
+  border-radius: 16px 16px 10px 10px;
+  background: var(--bw-surface, #f5f8fb);
+  box-shadow: 0 -10px 30px rgba(7, 24, 50, 0.25);
+}
+
+.modal-card h2 {
+  margin: 0 0 4px;
+  color: var(--bw-header, #08254a);
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.modal-card label {
+  display: grid;
+  gap: 6px;
+}
+
+.modal-card label span {
+  color: var(--bw-header, #08254a);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.modal-card input,
+.modal-card select,
+.modal-card textarea {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  box-sizing: border-box;
+  border: 1px solid var(--bw-border, #e4e8ef);
+  border-radius: 8px;
+  background: var(--bw-white, #ffffff);
+  color: var(--bw-text, #071832);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.modal-card textarea {
+  resize: none;
+}
+
+.readonly-note {
+  margin: 0;
+  color: var(--bw-text-secondary, #566071);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.modal-error {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(217, 45, 32, 0.1);
+  color: var(--bw-error-text, #b42318);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.modal-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.modal-cancel,
+.modal-save {
+  min-height: 46px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.modal-cancel {
+  border: 1px solid rgba(8, 37, 74, 0.16);
+  background: var(--bw-white, #ffffff);
+  color: var(--bw-header, #08254a);
+}
+
+.modal-save {
+  border: none;
+  background: var(--bw-primary, #052b66);
+  color: var(--bw-white, #ffffff);
 }
 </style>
