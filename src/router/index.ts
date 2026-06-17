@@ -60,6 +60,14 @@ const routes: Array<RouteRecordRaw> = [
         },
       },
       {
+        path: 'recordatorios',
+        name: 'recordatorios',
+        component: () => import('@/modules/recordatorios/pages/RemindersPage.vue'),
+        meta: {
+          roles: ['ganadero', 'asistente'],
+        },
+      },
+      {
         path: 'reporte-compartido',
         name: 'shared-report',
         component: () => import('@/modules/reportes/pages/SharedReportPage.vue'),

@@ -9,7 +9,16 @@
           </div>
 
           <div class="header-actions">
-            <button type="button" aria-label="Notificaciones" class="notification-button">
+            <router-link
+              v-if="canManageReminders"
+              to="/app/recordatorios"
+              aria-label="Recordatorios"
+              class="notification-button"
+            >
+              <ion-icon :icon="notificationsOutline" />
+              <span v-if="notificationCount">{{ notificationCount }}</span>
+            </router-link>
+            <button v-else type="button" aria-label="Notificaciones" class="notification-button">
               <ion-icon :icon="notificationsOutline" />
               <span v-if="notificationCount">{{ notificationCount }}</span>
             </button>
@@ -195,7 +204,7 @@
           <section class="reminder-section">
             <div class="activity-heading">
               <h1>Recordatorios</h1>
-              <router-link to="/app/bovinos">Ver bovinos</router-link>
+              <router-link to="/app/recordatorios">Configurar</router-link>
             </div>
 
             <div v-if="reminders.length" class="reminder-list">
@@ -273,6 +282,10 @@ const userName = computed(() => currentUser.value?.fullName ?? 'Usuario');
 const isAdmin = computed(() => currentUser.value?.role === 'admin');
 const isAssistant = computed(() => currentUser.value?.role === 'asistente');
 const isVet = computed(() => currentUser.value?.role === 'veterinario');
+const canManageReminders = computed(() => {
+  const role = currentUser.value?.role;
+  return role === 'ganadero' || role === 'asistente';
+});
 
 const headerSubtitle = computed(() => {
   if (isAdmin.value) {
