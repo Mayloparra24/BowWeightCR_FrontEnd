@@ -62,7 +62,7 @@ ionic capacitor sync
 
 ### 3. Abrir en entornos nativos
 Para ejecutar, emular o firmar la aplicación desde las herramientas oficiales:
-
+ 
 *   **Android:**
     ```bash
     ionic capacitor open android

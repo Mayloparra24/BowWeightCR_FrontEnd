@@ -12,7 +12,7 @@
 
         <template v-if="bovino">
           <section class="profile-card">
-            <img :src="bovino.photoUrl" :alt="`Foto de ${bovino.name}`" />
+            <img :src="bovinoPhoto(bovino.photoUrl)" :alt="`Foto de ${bovino.name}`" @error="onBovinoPhotoError" />
             <div>
               <h2>{{ bovino.name }}</h2>
               <p>{{ bovino.breed }} - {{ bovino.sex }} - Arete</p>
@@ -118,6 +118,7 @@ import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { currentUser } from '@/modules/auth/services/sessionService';
 import { bovinos, fincas, registrosPeso } from '@/shared/data/mockData';
+import { bovinoPhoto, onBovinoPhotoError } from '@/shared/utils/bovinoPhoto';
 import type { Bovino } from '@/shared/types/domain';
 import {
   exportBovinoCsv,
