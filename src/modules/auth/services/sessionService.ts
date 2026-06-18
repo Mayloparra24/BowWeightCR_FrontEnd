@@ -79,6 +79,17 @@ export const login = async (email: string, password: string): Promise<Usuario> =
   return user;
 };
 
+export const changePassword = async (input: {
+  currentPassword: string;
+  newPassword: string;
+  newPasswordConfirmation: string;
+}): Promise<Usuario> => {
+  const { user } = await authRepo.changePassword(input);
+  state.user = user;
+  await persistUser(user);
+  return user;
+};
+
 export const logout = async (): Promise<void> => {
   await authRepo.logout();
   state.user = null;

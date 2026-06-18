@@ -9,15 +9,16 @@
           </div>
 
           <div class="header-actions">
-            <router-link
+            <button
               v-if="canManageReminders"
-              to="/app/recordatorios"
+              type="button"
               aria-label="Recordatorios"
               class="notification-button"
+              @click="abrirRecordatorios"
             >
               <ion-icon :icon="notificationsOutline" />
               <span v-if="notificationCount">{{ notificationCount }}</span>
-            </router-link>
+            </button>
             <div v-if="!isAdmin" class="user-avatar">{{ userInitials }}</div>
             <router-link v-if="isAdmin" to="/app/configuracion" aria-label="Configuración">
               <ion-icon :icon="settingsOutline" />
@@ -107,7 +108,8 @@
                   <strong>{{ bovino.name }}</strong>
                   <small>Finca<br />{{ farmName(bovino.farmId) }}</small>
                 </span>
-                <b>{{ bovino.lastWeightKg }} <small>Kg</small></b>
+                <b v-if="bovino.lastWeightKg > 0">{{ bovino.lastWeightKg }} <small>Kg</small></b>
+                <span v-else class="weight-empty">Sin pesaje</span>
               </router-link>
             </div>
 
@@ -153,7 +155,8 @@
                   <strong>{{ bovino.name }}</strong>
                   <small>{{ bovino.earTag }}<br />{{ farmName(bovino.farmId) }}</small>
                 </span>
-                <b>{{ bovino.lastWeightKg }} <small>Kg</small></b>
+                <b v-if="bovino.lastWeightKg > 0">{{ bovino.lastWeightKg }} <small>Kg</small></b>
+                <span v-else class="weight-empty">Sin pesaje</span>
               </router-link>
             </div>
           </section>
@@ -227,9 +230,9 @@
               <router-link to="/app/bovinos">Ver historial</router-link>
             </div>
 
-            <div v-if="bovinosRecientes.length" class="animal-feed">
+            <div v-if="ultimosPesajes.length" class="animal-feed">
               <router-link
-                v-for="bovino in bovinosRecientes"
+                v-for="bovino in ultimosPesajes"
                 :key="bovino.id"
                 class="animal-row"
                 :to="`/app/bovinos/${bovino.id}`"
@@ -262,6 +265,7 @@ import {
   speedometerOutline,
 } from 'ionicons/icons';
 import { computed, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import { currentUser } from '@/modules/auth/services/sessionService';
 import { bitacoraRepo } from '@/shared/services/bitacoraRepo';
 import { bovinosRepo } from '@/shared/services/bovinosRepo';
@@ -274,15 +278,21 @@ import {
   pendingOfflineCount,
   pendingOfflineItems,
 } from '@/shared/services/offlineService';
+import {
+  listarRecordatoriosVistos,
+  marcarRecordatoriosVistos,
+} from '@/shared/services/reminderService';
 import type { BitacoraEvento, Bovino, Finca } from '@/shared/types/domain';
 
+const router = useRouter();
 const userName = computed(() => currentUser.value?.fullName ?? 'Usuario');
 const isAdmin = computed(() => currentUser.value?.role === 'admin');
 const isAssistant = computed(() => currentUser.value?.role === 'asistente');
 const isVet = computed(() => currentUser.value?.role === 'veterinario');
+const isFarmerDashboard = computed(() => !isAdmin.value && !isAssistant.value && !isVet.value);
 const canManageReminders = computed(() => {
   const role = currentUser.value?.role;
-  return role === 'ganadero' || role === 'asistente';
+  return role === 'ganadero' || role === 'asistente' || isFarmerDashboard.value;
 });
 
 const fincas = ref<Finca[]>([]);
@@ -291,6 +301,7 @@ const totalUsuarios = ref(0);
 const adminEvents = ref<BitacoraEvento[]>([]);
 const eventsError = ref('');
 const cargando = ref(true);
+const viewedReminderStates = ref<Record<string, string>>({});
 
 const cargarDatos = async () => {
   cargando.value = true;
@@ -299,6 +310,8 @@ const cargarDatos = async () => {
     const [f, b] = await Promise.all([fincasRepo.list(), bovinosRepo.list()]);
     fincas.value = f;
     bovinos.value = b;
+    const vistos = await listarRecordatoriosVistos();
+    viewedReminderStates.value = vistos;
     if (isAdmin.value) {
       try {
         const { meta } = await usuariosRepo.list(1, 1);
@@ -351,6 +364,7 @@ const adminStats = computed(() => ({
 }));
 
 const bovinosRecientes = computed(() => bovinos.value.slice(0, 2));
+const ultimosPesajes = computed(() => bovinos.value.filter((bovino) => bovino.lastWeightKg > 0).slice(0, 2));
 const reminders = computed(() => {
   return bovinos.value
     .filter((bovino) => daysSinceLastWeight(bovino.lastWeightDate) >= 90 || bovino.lastWeightKg === 0)
@@ -363,7 +377,21 @@ const reminders = computed(() => {
       return { bovino, message };
     });
 });
-const notificationCount = computed(() => reminders.value.length + pendingOfflineCount.value);
+const unreadReminderCount = computed(() => {
+  return reminders.value.filter((reminder) => {
+    return viewedReminderStates.value[reminder.bovino.id] !== reminderStateKey(reminder.bovino);
+  }).length;
+});
+const notificationCount = computed(() => unreadReminderCount.value + pendingOfflineCount.value);
+
+const abrirRecordatorios = async () => {
+  const vistos = Object.fromEntries(
+    reminders.value.map((reminder) => [reminder.bovino.id, reminderStateKey(reminder.bovino)]),
+  );
+  await marcarRecordatoriosVistos(vistos);
+  viewedReminderStates.value = { ...viewedReminderStates.value, ...vistos };
+  await router.push('/app/recordatorios');
+};
 
 const vetStats = computed(() => ({
   fincas: fincas.value.length,
@@ -398,6 +426,10 @@ function daysSinceLastWeight(value: string) {
   if (Number.isNaN(date.getTime())) return 999;
   return Math.floor((Date.now() - date.getTime()) / 86_400_000);
 }
+
+const reminderStateKey = (bovino: Bovino) => {
+  return `${bovino.lastWeightDate || 'sin-fecha'}:${bovino.lastWeightKg}`;
+};
 </script>
 
 <style scoped>
@@ -789,6 +821,16 @@ function daysSinceLastWeight(value: string) {
 .animal-row b small {
   color: #071832;
   font-size: 12px;
+}
+
+.animal-row .weight-empty {
+  max-width: 62px;
+  color: #566071;
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1.15;
+  text-align: right;
+  text-transform: uppercase;
 }
 
 .reminder-section {

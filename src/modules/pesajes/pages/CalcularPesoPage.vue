@@ -164,7 +164,7 @@
 
           <div class="actions">
             <button class="cancel-button" type="button" @click="step = 'existe'">Atrás</button>
-            <button class="next-button" type="submit" :disabled="!formularioValido">Calcular peso</button>
+            <button class="next-button" type="submit" :aria-disabled="!formularioValido">Calcular peso</button>
           </div>
         </form>
 
@@ -340,6 +340,15 @@ const formularioValido = computed(() => {
   );
 });
 
+const validarRegistroNuevo = () => {
+  if (nuevo.name.trim().length < 2) return 'Ingrese el nombre del bovino.';
+  if (nuevo.earTag.trim().length < 6) return 'Ingrese un número de arete válido.';
+  if (!nuevo.farmId) return 'Seleccione la finca del bovino.';
+  if (!nuevo.breedId) return 'Seleccione la raza del bovino.';
+  if (!nuevo.birthDate) return 'Seleccione la fecha de nacimiento.';
+  return '';
+};
+
 const farmName = (farmId: string) => fincas.value.find((farm) => farm.id === farmId)?.name ?? 'Sin finca';
 
 const openCamera = () => {
@@ -440,6 +449,12 @@ const calcularExistente = async () => {
 const calcularNuevo = async () => {
   formError.value = '';
   modoNuevo.value = true;
+
+  const validationError = validarRegistroNuevo();
+  if (validationError) {
+    formError.value = validationError;
+    return;
+  }
 
   if (!isOnline.value) {
     formError.value = 'Se requiere conexión para registrar un bovino nuevo.';
@@ -761,6 +776,11 @@ const guardar = async () => {
 
 .next-button:disabled {
   opacity: 0.45;
+  box-shadow: none;
+}
+
+.next-button[aria-disabled='true'] {
+  opacity: 0.72;
   box-shadow: none;
 }
 

@@ -9,10 +9,13 @@
       </div>
       <p>{{ bovino.breed }} - {{ bovino.sex }}</p>
       <p class="muted">Arete {{ bovino.earTag }}</p>
-      <p class="muted">Último pesaje {{ bovino.lastWeightDate }}</p>
+      <p class="muted">
+        {{ bovino.lastWeightDate ? `Último pesaje ${bovino.lastWeightDate}` : 'Sin pesaje registrado' }}
+      </p>
     </div>
 
-    <strong class="weight">{{ bovino.lastWeightKg }} Kg</strong>
+    <strong v-if="bovino.lastWeightKg > 0" class="weight">{{ bovino.lastWeightKg }} Kg</strong>
+    <span v-else class="weight-empty">Sin pesaje</span>
   </article>
 </template>
 
@@ -33,7 +36,10 @@ defineProps<{
   gap: 10px;
   align-items: center;
   padding: 10px;
-  background: #d9d9d9;
+  border: 1px solid rgba(8, 37, 74, 0.08);
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 12px 24px rgba(8, 37, 74, 0.06);
 }
 
 img {
@@ -86,5 +92,16 @@ p {
   font-size: 22px;
   font-weight: 900;
   white-space: nowrap;
+}
+
+.weight-empty {
+  align-self: end;
+  max-width: 70px;
+  color: #566071;
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1.15;
+  text-align: right;
+  text-transform: uppercase;
 }
 </style>
