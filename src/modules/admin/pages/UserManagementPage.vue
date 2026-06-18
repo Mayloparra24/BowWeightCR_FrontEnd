@@ -54,8 +54,14 @@
           </article>
 
           <div v-if="!visibleUsers.length" class="empty-state">
-            <strong>No hay usuarios registrados.</strong>
-            <span>Crea el primer usuario para habilitar accesos al sistema.</span>
+            <strong>{{ loadError || 'No hay usuarios registrados.' }}</strong>
+            <span>
+              {{
+                loadError
+                  ? 'Intente actualizar la vista en unos segundos.'
+                  : 'Crea el primer usuario para habilitar accesos al sistema.'
+              }}
+            </span>
           </div>
         </section>
       </section>
@@ -73,13 +79,16 @@ import type { Rol, Usuario } from '@/shared/types/domain';
 const users = ref<Usuario[]>([]);
 const search = ref('');
 const selectedFilter = ref('Todos');
+const loadError = ref('');
 const filters = ['Todos', 'Ganaderos', 'Asistentes', 'Veterinarios', 'Administradores', 'Inactivos'];
 
 onIonViewWillEnter(async () => {
   try {
+    loadError.value = '';
     const { items } = await usuariosRepo.list(100);
     users.value = items;
-  } catch {
+  } catch (error) {
+    loadError.value = error instanceof Error ? error.message : 'No fue posible cargar los usuarios.';
     users.value = [];
   }
 });

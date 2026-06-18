@@ -1,8 +1,13 @@
 import type { AxiosError } from 'axios';
 import type { ApiEnvelope } from '@/shared/api/types';
 
+type ApiErrorMessages = {
+  notFound?: string;
+  fallback?: string;
+};
+
 /** Extrae un mensaje legible de un error de axios (validación 422, error backend, red). */
-export const extractApiError = (error: unknown): string => {
+export const extractApiError = (error: unknown, messages: ApiErrorMessages = {}): string => {
   const axiosError = error as AxiosError<ApiEnvelope<unknown>>;
   const response = axiosError?.response;
 
@@ -18,9 +23,9 @@ export const extractApiError = (error: unknown): string => {
     }
     if (response.status === 401) return 'Credenciales incorrectas.';
     if (response.status === 403) return 'No tiene permisos para esta acción.';
-    if (response.status === 404) return 'El recurso no existe.';
+    if (response.status === 404) return messages.notFound ?? 'El recurso no existe.';
     if (response.status === 429) return 'Demasiadas peticiones. Espere un momento.';
-    return `Error ${response.status}`;
+    return messages.fallback ?? `Error ${response.status}`;
   }
 
   if (axiosError?.request) {
