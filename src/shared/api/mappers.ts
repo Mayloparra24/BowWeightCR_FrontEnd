@@ -19,7 +19,7 @@ import type {
 const PHOTO_PLACEHOLDER =
   'data:image/svg+xml;utf8,' +
   encodeURIComponent(
-    '<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180" viewBox="0 0 180 180"><rect width="180" height="180" fill="#d8e8f7"/><text x="50%" y="50%" font-family="Arial" font-size="14" fill="#052b66" text-anchor="middle" dominant-baseline="middle">Bovino</text></svg>',
+    '<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180" viewBox="0 0 180 180"><rect width="180" height="180" rx="22" fill="#d8e8f7"/><g fill="#5b8fc0"><path d="M44 70c-7-10-22-11-22-2 0 8 9 13 16 13zM136 70c7-10 22-11 22-2 0 8-9 13-16 13z"/><path d="M90 56c-25 0-43 16-43 38 0 20 14 36 43 36s43-16 43-36c0-22-18-38-43-38zm-18 44a7 7 0 1 1 0-14 7 7 0 0 1 0 14zm36 0a7 7 0 1 1 0-14 7 7 0 0 1 0 14zm-18 18c-8 0-14-4-14-8h28c0 4-6 8-14 8z"/></g></svg>',
   );
 
 export const mapRol = (rol: UsuarioDTO['rol']): Rol => {

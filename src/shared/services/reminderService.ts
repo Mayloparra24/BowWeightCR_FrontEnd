@@ -11,10 +11,11 @@ import { Preferences } from '@capacitor/preferences';
  *
  * - En movil (Capacitor) usa @capacitor/local-notifications y @capacitor/preferences.
  * - En web/escritorio no hay notificaciones nativas: la config se guarda en
- *   memoria y las funciones no fallan, para no romper `npm run dev` ni los tests.
+ *   localStorage, con respaldo en memoria si el navegador no permite guardar.
  */
 
 const STORAGE_KEY = 'bovweight.recordatorios';
+const SEEN_STORAGE_KEY = 'bovweight.recordatorios.vistos';
 
 export interface Recordatorio {
   bovinoId: string;
@@ -34,9 +35,35 @@ const isNative = () => Capacitor.isNativePlatform();
 // un parpadeo en pantalla).
 let permisoConcedido = false;
 
-// Respaldo en memoria para web (donde Preferences igual funciona, pero las
-// notificaciones nativas no existen).
+// Respaldo en memoria para web cuando localStorage no esta disponible.
 let memoriaWeb: Record<string, Recordatorio> = {};
+let vistosMemoriaWeb: Record<string, string> = {};
+
+const leerWebStorage = <T>(key: string, fallback: T): T => {
+  if (typeof window === 'undefined' || !window.localStorage) {
+    return fallback;
+  }
+
+  try {
+    const value = window.localStorage.getItem(key);
+    return value ? (JSON.parse(value) as T) : fallback;
+  } catch {
+    return fallback;
+  }
+};
+
+const guardarWebStorage = <T>(key: string, data: T): boolean => {
+  if (typeof window === 'undefined' || !window.localStorage) {
+    return false;
+  }
+
+  try {
+    window.localStorage.setItem(key, JSON.stringify(data));
+    return true;
+  } catch {
+    return false;
+  }
+};
 
 /** Genera un id numerico estable a partir del id del bovino. */
 const notificationIdFor = (bovinoId: string): number => {
@@ -49,7 +76,7 @@ const notificationIdFor = (bovinoId: string): number => {
 
 const leerTodos = async (): Promise<Record<string, Recordatorio>> => {
   if (!isNative()) {
-    return { ...memoriaWeb };
+    return leerWebStorage(STORAGE_KEY, memoriaWeb);
   }
 
   try {
@@ -63,11 +90,39 @@ const leerTodos = async (): Promise<Record<string, Recordatorio>> => {
 const guardarTodos = async (data: Record<string, Recordatorio>): Promise<void> => {
   if (!isNative()) {
     memoriaWeb = { ...data };
+    guardarWebStorage(STORAGE_KEY, data);
     return;
   }
 
   try {
     await Preferences.set({ key: STORAGE_KEY, value: JSON.stringify(data) });
+  } catch {
+    /* sin almacenamiento: queda solo en esta sesion */
+  }
+};
+
+const leerVistos = async (): Promise<Record<string, string>> => {
+  if (!isNative()) {
+    return leerWebStorage(SEEN_STORAGE_KEY, vistosMemoriaWeb);
+  }
+
+  try {
+    const { value } = await Preferences.get({ key: SEEN_STORAGE_KEY });
+    return value ? (JSON.parse(value) as Record<string, string>) : {};
+  } catch {
+    return {};
+  }
+};
+
+const guardarVistos = async (data: Record<string, string>): Promise<void> => {
+  if (!isNative()) {
+    vistosMemoriaWeb = { ...data };
+    guardarWebStorage(SEEN_STORAGE_KEY, data);
+    return;
+  }
+
+  try {
+    await Preferences.set({ key: SEEN_STORAGE_KEY, value: JSON.stringify(data) });
   } catch {
     /* sin almacenamiento: queda solo en esta sesion */
   }
@@ -110,6 +165,26 @@ export const listarRecordatorios = async (): Promise<Recordatorio[]> => {
 export const obtenerRecordatorio = async (bovinoId: string): Promise<Recordatorio | null> => {
   const todos = await leerTodos();
   return todos[bovinoId] ?? null;
+};
+
+export const listarRecordatoriosVistos = async (): Promise<Record<string, string>> => {
+  return leerVistos();
+};
+
+export const marcarRecordatoriosVistos = async (
+  recordatorios: string[] | Record<string, string>,
+): Promise<void> => {
+  const entries = Array.isArray(recordatorios)
+    ? recordatorios.map((id) => [id, new Date().toISOString()] as const)
+    : Object.entries(recordatorios);
+
+  if (!entries.length) return;
+
+  const vistos = await leerVistos();
+  entries.forEach(([id, estado]) => {
+    vistos[id] = estado;
+  });
+  await guardarVistos(vistos);
 };
 
 /**

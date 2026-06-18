@@ -103,7 +103,7 @@ import {
 import { eyeOffOutline, eyeOutline, lockClosedOutline } from 'ionicons/icons';
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { authRepo } from '@/shared/services/authRepo';
+import { changePassword, getDefaultRouteForRole } from '@/modules/auth/services/sessionService';
 
 const router = useRouter();
 const currentPassword = ref('');
@@ -140,15 +140,12 @@ const handleSubmit = async () => {
 
   isSubmitting.value = true;
   try {
-    await authRepo.changePassword({
+    const user = await changePassword({
       currentPassword: currentPassword.value,
       newPassword: newPassword.value,
       newPasswordConfirmation: confirmPassword.value,
     });
-    // Refrescar usuario en memoria: el guard lo hará al navegar,
-    // pero forzamos una recarga de /me para actualizar mustChangePassword.
-    await authRepo.me();
-    await router.replace('/app/inicio');
+    await router.replace(getDefaultRouteForRole(user.role));
   } catch (error) {
     errorField.value = '';
     errorMessage.value = error instanceof Error ? error.message : 'No se pudo cambiar la contraseña.';
