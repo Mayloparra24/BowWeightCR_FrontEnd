@@ -45,6 +45,10 @@ jobs:
         run: |
           echo "$RELEASE_KEYSTORE_BASE64" | base64 -d > android/app/release.keystore
 
+      - name: Grant execute permission for gradlew
+        working-directory: android
+        run: chmod +x ./gradlew
+
       - name: Build release APK
         if: env.RELEASE_KEYSTORE_BASE64 != ''
         working-directory: android
@@ -53,6 +57,10 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: ./gradlew assembleRelease
+
+      - name: Grant execute permission for gradlew
+        working-directory: android
+        run: chmod +x ./gradlew
 
       - name: Build debug APK (fallback if no keystore)
         env:
