@@ -17,6 +17,8 @@ npm ci
 
 ## Configurar entorno
 
+### Desarrollo local
+
 ```bash
 cp .env.example .env
 ```
@@ -26,6 +28,10 @@ Editar `.env` con la URL del backend:
 ```env
 VITE_API_URL=https://bowweightcrbackend-production.up.railway.app/api
 ```
+
+### Producción (CI/CD)
+
+La URL de producción está en `.env.production`. Este archivo está commitado al repo y Vite lo usa automáticamente al hacer `npm run build`.
 
 ## Verificar instalación
 

@@ -1,5 +1,7 @@
 # CI/CD
 
+La URL del backend de producción está definida en `.env.production`. Este archivo está commitado al repo, por lo que los builds de CI incluyen automáticamente `VITE_API_URL` correcta.
+
 ## Workflows
 
 ### CI (`ci.yml`)
