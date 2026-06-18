@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <ion-page>
     <ion-content class="page-surface">
       <section class="content">
@@ -19,9 +19,9 @@
           </div>
         </section>
 
-        <section v-if="user" class="detail-list" aria-label="Información del usuario">
+        <section v-if="user" class="detail-list" aria-label="InformaciÃ³n del usuario">
           <article>
-            <h3>Último inicio de sesión</h3>
+            <h3>Ãšltimo inicio de sesiÃ³n</h3>
             <p>Sin registros.</p>
           </article>
 
@@ -40,20 +40,29 @@
           </article>
 
           <article>
-            <h3>Contraseña</h3>
+            <h3>ContraseÃ±a</h3>
             <div class="password-reset-box">
               <input
-                v-model="nuevaPassword"
+                :value="nuevaPassword"
                 type="text"
                 readonly
-                placeholder="Generá una nueva contraseña"
+                placeholder="GenerÃ¡ y guardÃ¡ una nueva clave"
               />
+              <p class="password-hint">
+                Al generar una nueva clave, queda guardada de inmediato. Copiala antes de salir.
+              </p>
               <div class="password-actions">
-                <button type="button" class="status-action" :disabled="guardandoPassword" @click="generarPassword">
-                  Generar
+                <button type="button" class="status-action" :disabled="guardandoPassword" @click="generarYGuardarPassword">
+                  {{ guardandoPassword ? 'Guardando...' : 'Generar y guardar' }}
                 </button>
-                <button type="button" class="status-action save" :disabled="!nuevaPassword || guardandoPassword" @click="guardarPassword">
-                  Guardar
+                <button
+                  type="button"
+                  class="status-action save"
+                  :class="{ copied: passwordCopiada }"
+                  :disabled="!nuevaPassword || guardandoPassword"
+                  @click="copiarPassword"
+                >
+                  {{ passwordCopiada ? 'Copiada' : 'Copiar' }}
                 </button>
               </div>
             </div>
@@ -88,6 +97,7 @@ const nuevaPassword = ref('');
 const guardandoPassword = ref(false);
 const passwordError = ref('');
 const passwordSuccess = ref('');
+const passwordCopiada = ref(false);
 
 const cargar = async () => {
   try {
@@ -143,21 +153,37 @@ const generarPassword = () => {
   nuevaPassword.value = result;
   passwordError.value = '';
   passwordSuccess.value = '';
+  passwordCopiada.value = false;
 };
 
-const guardarPassword = async () => {
-  if (!user.value || !nuevaPassword.value) return;
+const generarYGuardarPassword = async () => {
+  if (!user.value) return;
   guardandoPassword.value = true;
   passwordError.value = '';
   passwordSuccess.value = '';
+  generarPassword();
+
   try {
     await usuariosRepo.update(user.value.id, { password: nuevaPassword.value });
-    passwordSuccess.value = `Contraseña actualizada. Nueva clave: ${nuevaPassword.value}`;
-    nuevaPassword.value = '';
+    passwordSuccess.value = `Clave actualizada. Nueva clave: ${nuevaPassword.value}`;
   } catch (error) {
     passwordError.value = error instanceof Error ? error.message : 'No fue posible actualizar la contraseña.';
   } finally {
     guardandoPassword.value = false;
+  }
+};
+
+const copiarPassword = async () => {
+  if (!nuevaPassword.value) return;
+  try {
+    await navigator.clipboard?.writeText(nuevaPassword.value);
+    passwordCopiada.value = true;
+    passwordSuccess.value = 'Clave copiada al portapapeles.';
+    window.setTimeout(() => {
+      passwordCopiada.value = false;
+    }, 1800);
+  } catch {
+    passwordError.value = 'No se pudo copiar la clave. Copiala manualmente.';
   }
 };
 </script>
@@ -343,9 +369,22 @@ h3 {
   font-weight: 700;
 }
 
+.password-hint {
+  margin: -2px 0 0;
+  color: #566071;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
 .password-actions {
   display: flex;
   gap: 10px;
+}
+
+.status-action.copied {
+  background: #d8e8f7;
+  color: #052b66;
 }
 
 .password-success {

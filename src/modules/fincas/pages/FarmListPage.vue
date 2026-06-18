@@ -39,7 +39,7 @@
               <button v-if="isFarmer" type="button" class="icon-action" aria-label="Editar finca" @click="abrirEditar(farm)">
                 <ion-icon :icon="createOutline" />
               </button>
-              <button v-if="isFarmer" type="button" class="icon-action danger" aria-label="Eliminar finca" @click="quitarFinca(farm)">
+              <button v-if="isFarmer" type="button" class="icon-action danger" aria-label="Eliminar finca" @click="pedirEliminar(farm)">
                 <ion-icon :icon="trashOutline" />
               </button>
             </div>
@@ -71,9 +71,28 @@
 
           <div class="modal-actions">
             <button type="button" class="modal-cancel" @click="cerrarModal">Cancelar</button>
-            <button type="submit" class="modal-save">Guardar</button>
+            <button type="submit" class="modal-save" :disabled="cargandoAccion">
+              {{ cargandoAccion ? 'Guardando...' : 'Guardar' }}
+            </button>
           </div>
         </form>
+      </div>
+
+      <div v-if="fincaPorEliminar" class="modal-backdrop confirm-backdrop" @click.self="cerrarEliminar">
+        <section class="confirm-card" role="dialog" aria-modal="true" aria-labelledby="delete-farm-title">
+          <h2 id="delete-farm-title">Eliminar finca</h2>
+          <p>
+            ¿Desea eliminar la finca <strong>{{ fincaPorEliminar.name }}</strong>?
+          </p>
+          <p v-if="modalError" class="modal-error">{{ modalError }}</p>
+
+          <div class="modal-actions">
+            <button type="button" class="modal-cancel" @click="cerrarEliminar">Cancelar</button>
+            <button type="button" class="modal-save danger-save" :disabled="cargandoAccion" @click="confirmarEliminar">
+              {{ cargandoAccion ? 'Eliminando...' : 'Eliminar' }}
+            </button>
+          </div>
+        </section>
       </div>
     </ion-content>
   </ion-page>
@@ -97,6 +116,7 @@ const cargandoAccion = ref(false);
 const modalAbierto = ref(false);
 const editandoId = ref('');
 const modalError = ref('');
+const fincaPorEliminar = ref<Finca | null>(null);
 const form = reactive({ name: '', location: '' });
 
 const cargarFincas = async () => {
@@ -135,9 +155,13 @@ const cerrarModal = () => {
 
 const guardar = async () => {
   modalError.value = '';
+  const input: FincaInput = { name: form.name.trim(), location: form.location.trim() };
+  if (!input.name || !input.location) {
+    modalError.value = 'Completá el nombre y la ubicación de la finca.';
+    return;
+  }
   cargandoAccion.value = true;
   try {
-    const input: FincaInput = { name: form.name, location: form.location };
     if (editandoId.value) {
       await fincasRepo.update(editandoId.value, input);
     } else {
@@ -152,15 +176,28 @@ const guardar = async () => {
   }
 };
 
-const quitarFinca = async (farm: Finca) => {
-  if (!confirm(`¿Eliminar la finca "${farm.name}"?`)) return;
+const pedirEliminar = (farm: Finca) => {
+  modalError.value = '';
+  fincaPorEliminar.value = farm;
+};
+
+const cerrarEliminar = () => {
+  if (cargandoAccion.value) return;
+  fincaPorEliminar.value = null;
+  modalError.value = '';
+};
+
+const confirmarEliminar = async () => {
+  if (!fincaPorEliminar.value) return;
   try {
-    await fincasRepo.remove(farm.id);
+    cargandoAccion.value = true;
+    await fincasRepo.remove(fincaPorEliminar.value.id);
+    fincaPorEliminar.value = null;
     await cargarFincas();
   } catch (error) {
     modalError.value = error instanceof Error ? error.message : 'No fue posible eliminar la finca.';
-    editandoId.value = '';
-    modalAbierto.value = true;
+  } finally {
+    cargandoAccion.value = false;
   }
 };
 
@@ -188,6 +225,7 @@ const visibleFarms = computed(() => {
 <style scoped>
 .page-surface {
   --background: #f5f8fb;
+  --padding-bottom: calc(var(--bw-page-pad-bottom-tabs) + 120px);
 }
 
 .page-surface::part(scroll) {
@@ -199,7 +237,7 @@ const visibleFarms = computed(() => {
   max-width: 390px;
   min-height: 100%;
   margin: 0 auto;
-  padding: var(--bw-page-pad-top) var(--bw-page-pad-x) var(--bw-page-pad-bottom-tabs);
+  padding: var(--bw-page-pad-top) var(--bw-page-pad-x) 24px;
   box-sizing: border-box;
 }
 
@@ -278,6 +316,7 @@ const visibleFarms = computed(() => {
   display: grid;
   gap: 12px;
   margin-top: 18px;
+  padding-bottom: calc(var(--bw-page-pad-bottom-tabs) + 144px);
 }
 
 .farm-card {
@@ -341,6 +380,7 @@ h2 {
   background: rgba(255, 255, 255, 0.7);
   color: #566071;
   text-align: center;
+  margin-bottom: calc(var(--bw-page-pad-bottom-tabs) + 80px);
 }
 
 .empty-state strong {
@@ -405,11 +445,14 @@ h2 {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 50;
+  z-index: 1000;
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  padding: 16px 16px max(16px, var(--bw-safe-bottom)) 16px;
+  padding:
+    16px
+    16px
+    calc(var(--bw-tabbar-height, 76px) + var(--bw-safe-bottom) + 18px);
   background: rgba(7, 24, 50, 0.45);
 }
 
@@ -418,16 +461,46 @@ h2 {
   max-width: 390px;
   display: grid;
   gap: 12px;
-  padding: 20px 18px calc(22px + var(--bw-safe-bottom));
+  padding: 20px 18px 18px;
   border-radius: 16px 16px 10px 10px;
   background: #f5f8fb;
   box-shadow: 0 -10px 30px rgba(7, 24, 50, 0.25);
 }
 
-.modal-card h2 {
+.confirm-backdrop {
+  align-items: center;
+  padding: 20px;
+}
+
+.confirm-card {
+  width: 100%;
+  max-width: 350px;
+  display: grid;
+  gap: 14px;
+  padding: 22px 20px;
+  border-radius: 14px;
+  background: #f5f8fb;
+  color: #08254a;
+  box-shadow: 0 18px 40px rgba(7, 24, 50, 0.28);
+}
+
+.modal-card h2,
+.confirm-card h2 {
   margin: 0 0 4px;
   color: #08254a;
   font-size: 16px;
+  font-weight: 900;
+}
+
+.confirm-card p {
+  margin: 0;
+  color: #566071;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.confirm-card strong {
+  color: #08254a;
   font-weight: 900;
 }
 
@@ -491,5 +564,15 @@ h2 {
   border: none;
   background: #052b66;
   color: #ffffff;
+}
+
+.modal-save:disabled,
+.modal-cancel:disabled {
+  opacity: 0.65;
+  cursor: default;
+}
+
+.danger-save {
+  background: #b42318;
 }
 </style>

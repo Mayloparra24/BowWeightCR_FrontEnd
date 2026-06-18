@@ -75,7 +75,14 @@
 
             </form>
 
-            <p class="support-text">¿Problemas para ingresar? Contactá al administrador.</p>
+            <div class="support-box">
+              <button type="button" class="support-toggle" @click="showSupportHelp = !showSupportHelp">
+                ¿Problemas para ingresar? Contactá al administrador.
+              </button>
+              <p v-if="showSupportHelp" class="support-help">
+                Solicitá al administrador que revise tu usuario o restablezca tu contraseña temporal.
+              </p>
+            </div>
           </section>
         </section>
       </main>
@@ -109,6 +116,7 @@ const router = useRouter();
 const email = ref('');
 const password = ref('');
 const showPassword = ref(false);
+const showSupportHelp = ref(false);
 const errorMessage = ref('');
 const errorField = ref<'email' | 'password' | ''>('');
 const isSubmitting = ref(false);
@@ -457,18 +465,26 @@ const handleLogin = async () => {
   line-height: 1.4;
 }
 
-.support-text {
+.support-box {
   margin: 26px 32px 32px;
   text-align: center;
-  color: var(--bw-text-secondary);
-  font-size: 12px;
-  font-weight: 600;
 }
 
-.support-text a {
-  color: var(--bw-accent);
+.support-toggle {
+  border: 0;
+  background: transparent;
+  color: var(--bw-text-secondary);
+  font-size: 12px;
   font-weight: 800;
-  text-decoration: none;
+  cursor: pointer;
+}
+
+.support-help {
+  margin: 10px 0 0;
+  color: var(--bw-text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.35;
 }
 
 @media (max-width: 430px) {
@@ -553,8 +569,11 @@ const handleLogin = async () => {
     font-size: 14px;
   }
 
-  .support-text {
+  .support-box {
     margin: 20px 24px 24px;
+  }
+
+  .support-toggle {
     font-size: 11px;
   }
 }
@@ -608,7 +627,8 @@ const handleLogin = async () => {
 
   .field-group label,
   .forgot-button,
-  .support-text {
+  .support-toggle,
+  .support-help {
     color: var(--bw-sky-soft);
   }
 }

@@ -85,6 +85,7 @@ import { bovinoPhoto, onBovinoPhotoError } from '@/shared/utils/bovinoPhoto';
 import {
   cancelarRecordatorio,
   listarRecordatorios,
+  marcarRecordatoriosVistos,
   programarRecordatorio,
   solicitarPermisoNotificaciones,
   type Recordatorio,
@@ -126,9 +127,21 @@ const cargar = async () => {
       seleccion[bovino.id] = config[bovino.id]?.cadaDias ?? 30;
     }
   });
+
+  await marcarRecordatoriosVistos(
+    Object.fromEntries(
+      recordatoriosPendientes.value.map((bovino) => [bovino.id, reminderStateKey(bovino)]),
+    ),
+  );
 };
 
 onIonViewWillEnter(cargar);
+
+const recordatoriosPendientes = computed(() => {
+  return bovinosDisponibles.value.filter((bovino) => {
+    return daysSinceLastWeight(bovino.lastWeightDate) >= 90 || bovino.lastWeightKg === 0;
+  });
+});
 
 const activar = async (bovino: Bovino) => {
   permisoDenegado.value = false;
@@ -160,16 +173,28 @@ const formatearFecha = (iso: string) => {
   const fecha = new Date(iso);
   return fecha.toLocaleDateString('es-CR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 };
+
+function daysSinceLastWeight(value: string) {
+  if (!value) return 999;
+  const [day, month, year] = value.split('/').map(Number);
+  const date = new Date(year, month - 1, day);
+  if (Number.isNaN(date.getTime())) return 999;
+  return Math.floor((Date.now() - date.getTime()) / 86_400_000);
+}
+
+const reminderStateKey = (bovino: Bovino) => {
+  return `${bovino.lastWeightDate || 'sin-fecha'}:${bovino.lastWeightKg}`;
+};
 </script>
 
 <style scoped>
 .page-surface {
   --background: var(--bw-surface, #f5f8fb);
+  --padding-bottom: calc(var(--bw-page-pad-bottom-tabs) + 120px);
 }
 
 .page-surface::part(scroll) {
-  display: flex;
-  justify-content: center;
+  display: block;
 }
 
 .reminders-shell {
@@ -177,7 +202,7 @@ const formatearFecha = (iso: string) => {
   max-width: 430px;
   min-height: 100%;
   margin: 0 auto;
-  padding: var(--bw-page-pad-top) var(--bw-page-pad-x) var(--bw-page-pad-bottom-tabs);
+  padding: var(--bw-page-pad-top) var(--bw-page-pad-x) 24px;
   box-sizing: border-box;
 }
 
@@ -273,7 +298,7 @@ const formatearFecha = (iso: string) => {
 .reminder-cards {
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 0 0 calc(var(--bw-page-pad-bottom-tabs) + 144px);
   display: grid;
   gap: 14px;
 }

@@ -84,11 +84,11 @@ const exportarInventario = () => {
 <style scoped>
 .page-surface {
   --background: #f5f8fb;
+  --padding-bottom: calc(var(--bw-page-pad-bottom-tabs) + 120px);
 }
 
 .page-surface::part(scroll) {
-  display: flex;
-  justify-content: center;
+  display: block;
 }
 
 .animal-shell {
@@ -96,7 +96,7 @@ const exportarInventario = () => {
   max-width: 390px;
   min-height: 100%;
   margin: 0 auto;
-  padding: var(--bw-page-pad-top) var(--bw-page-pad-x) var(--bw-page-pad-bottom-tabs);
+  padding: var(--bw-page-pad-top) var(--bw-page-pad-x) 24px;
   box-sizing: border-box;
 }
 
@@ -182,6 +182,7 @@ h1 {
   display: grid;
   gap: 10px;
   margin-top: 18px;
+  padding-bottom: calc(var(--bw-page-pad-bottom-tabs) + 144px);
 }
 
 .empty-state {
