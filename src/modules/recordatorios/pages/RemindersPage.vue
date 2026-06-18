@@ -76,12 +76,10 @@
 </template>
 
 <script setup lang="ts">
-import { IonContent, IonIcon, IonPage } from '@ionic/vue';
+import { IonContent, IonIcon, IonPage, onIonViewWillEnter } from '@ionic/vue';
 import { chevronBackOutline } from 'ionicons/icons';
-import { onIonViewWillEnter } from '@ionic/vue';
 import { computed, reactive, ref } from 'vue';
-import { currentUser } from '@/modules/auth/services/sessionService';
-import { bovinos } from '@/shared/data/mockData';
+import { bovinosRepo } from '@/shared/services/bovinosRepo';
 import type { Bovino } from '@/shared/types/domain';
 import { bovinoPhoto, onBovinoPhotoError } from '@/shared/utils/bovinoPhoto';
 import {
@@ -107,14 +105,17 @@ const seleccion = reactive<Record<string, number>>({});
 const permisoDenegado = ref(false);
 const mensajeOk = ref('');
 
-const assignedFarmIds = computed(() => currentUser.value?.assignedFarmIds ?? []);
-const bovinosDisponibles = computed(() =>
-  bovinos.filter((bovino) => bovino.status === 'Activo' && assignedFarmIds.value.includes(bovino.farmId)),
-);
+const bovinos = ref<Bovino[]>([]);
+const bovinosDisponibles = computed(() => bovinos.value.filter((bovino) => bovino.status === 'Activo'));
 
 const cargar = async () => {
-  const lista = await listarRecordatorios();
+  try {
+    bovinos.value = await bovinosRepo.list();
+  } catch {
+    bovinos.value = [];
+  }
 
+  const lista = await listarRecordatorios();
   Object.keys(config).forEach((key) => delete config[key]);
   lista.forEach((item) => {
     config[item.bovinoId] = item;

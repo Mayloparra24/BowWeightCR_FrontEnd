@@ -47,39 +47,43 @@
 </template>
 
 <script setup lang="ts">
-import { IonContent, IonIcon, IonPage } from '@ionic/vue';
+import { IonContent, IonIcon, IonPage, onIonViewWillEnter } from '@ionic/vue';
 import { documentTextOutline, downloadOutline, shareSocialOutline } from 'ionicons/icons';
-import { computed } from 'vue';
-import { bovinos, fincas } from '@/shared/data/mockData';
-import { currentUser } from '@/modules/auth/services/sessionService';
+import { computed, ref } from 'vue';
+import { bovinosRepo } from '@/shared/services/bovinosRepo';
+import { fincasRepo } from '@/shared/services/fincasRepo';
 import { exportInventarioCsv, exportInventarioPdf, shareInventarioPdf } from '@/shared/services/reportService';
 import { bovinoPhoto, onBovinoPhotoError } from '@/shared/utils/bovinoPhoto';
+import type { Bovino, Finca } from '@/shared/types/domain';
 
-const assignedFarmIds = computed(() => currentUser.value?.assignedFarmIds ?? ['farm-esperanza']);
-const visibleBovinos = computed(() => {
-  return bovinos.filter((bovino) => assignedFarmIds.value.includes(bovino.farmId) && bovino.status === 'Activo');
+const bovinos = ref<Bovino[]>([]);
+const fincas = ref<Finca[]>([]);
+
+onIonViewWillEnter(async () => {
+  const [b, f] = await Promise.all([bovinosRepo.list(), fincasRepo.list()]);
+  bovinos.value = b;
+  fincas.value = f;
 });
 
-const fincaName = computed(() => {
-  const names = fincas
-    .filter((finca) => assignedFarmIds.value.includes(finca.id))
-    .map((finca) => finca.name);
+const visibleBovinos = computed(() => bovinos.value.filter((bovino) => bovino.status === 'Activo'));
 
+const fincaName = computed(() => {
+  const names = fincas.value.map((finca) => finca.name);
   return names.length ? names.join(' - ') : 'Reporte compartido';
 });
 
-const farmName = (farmId: string) => fincas.find((finca) => finca.id === farmId)?.name ?? 'Sin finca';
+const farmName = (farmId: string) => fincas.value.find((finca) => finca.id === farmId)?.name ?? 'Sin finca';
 
 const exportCsv = async () => {
-  await exportInventarioCsv(visibleBovinos.value, fincas);
+  await exportInventarioCsv(visibleBovinos.value, fincas.value);
 };
 
 const printReport = async () => {
-  await exportInventarioPdf(visibleBovinos.value, fincas, fincaName.value);
+  await exportInventarioPdf(visibleBovinos.value, fincas.value, fincaName.value);
 };
 
 const shareReport = async () => {
-  await shareInventarioPdf(visibleBovinos.value, fincas, fincaName.value);
+  await shareInventarioPdf(visibleBovinos.value, fincas.value, fincaName.value);
 };
 </script>
 

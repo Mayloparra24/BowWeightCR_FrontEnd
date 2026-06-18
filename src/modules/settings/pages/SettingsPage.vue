@@ -49,7 +49,7 @@ const initials = computed(() => {
 });
 
 const handleLogout = async () => {
-  logout();
+  await logout();
   await router.replace('/login');
 };
 </script>

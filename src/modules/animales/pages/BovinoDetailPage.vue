@@ -30,15 +30,25 @@
             <h2>Estado del animal</h2>
             <div class="status-actions">
               <button
-                v-for="option in statusOptions"
-                :key="option"
+                v-if="bovino.status === 'Activo'"
                 type="button"
-                :class="{ active: bovino.status === option }"
-                @click="bovino.status = option"
+                class="active"
+                @click="marcarInactivo"
               >
-                {{ option }}
+                Marcar inactivo
+              </button>
+              <button
+                v-else
+                type="button"
+                class="active"
+                @click="reactivar"
+              >
+                Reactivar
               </button>
             </div>
+            <p v-if="bovino.motivoInactividad" class="readonly-note">
+              Motivo de inactividad: {{ bovino.motivoInactividad }}
+            </p>
           </section>
 
           <section class="chart-section">
@@ -119,8 +129,8 @@
 
           <label>
             <span>Raza</span>
-            <select v-model="form.breed">
-              <option v-for="raza in razasDisponibles" :key="raza" :value="raza">{{ raza }}</option>
+            <select v-model="form.breedId">
+              <option v-for="raza in razas" :key="raza.id" :value="raza.id">{{ raza.nombre }}</option>
             </select>
           </label>
 
@@ -151,7 +161,7 @@
 </template>
 
 <script setup lang="ts">
-import { IonContent, IonIcon, IonPage } from '@ionic/vue';
+import { IonContent, IonIcon, IonPage, onIonViewWillEnter } from '@ionic/vue';
 import {
   analyticsOutline,
   chevronBackOutline,
@@ -163,11 +173,11 @@ import {
 import { computed, reactive, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { currentUser } from '@/modules/auth/services/sessionService';
-import { bovinos, fincas, registrosPeso } from '@/shared/data/mockData';
+import { bovinosRepo } from '@/shared/services/bovinosRepo';
+import { fincasRepo } from '@/shared/services/fincasRepo';
+import { razasRepo } from '@/shared/services/razasRepo';
 import { bovinoPhoto, onBovinoPhotoError } from '@/shared/utils/bovinoPhoto';
-import type { Bovino } from '@/shared/types/domain';
-import { actualizarBovino } from '@/shared/services/bovinoService';
-import { razasDisponibles } from '@/modules/pesajes/services/estimacionService';
+import type { Bovino, Finca, Raza } from '@/shared/types/domain';
 import {
   exportBovinoCsv,
   printBovinoReport,
@@ -176,44 +186,54 @@ import {
 } from '@/shared/services/reportService';
 
 const route = useRoute();
-const assignedFarmIds = computed(() => currentUser.value?.assignedFarmIds ?? []);
 
-const bovino = computed(() => {
-  return bovinos.find((item) => {
-    return item.id === route.params.id && assignedFarmIds.value.includes(item.farmId);
-  });
+const bovino = ref<Bovino | null>(null);
+const fincas = ref<Finca[]>([]);
+const razas = ref<Raza[]>([]);
+
+const cargarBovino = async () => {
+  const id = String(route.params.id);
+  try {
+    bovino.value = await bovinosRepo.get(id);
+  } catch {
+    bovino.value = null;
+  }
+};
+
+onIonViewWillEnter(async () => {
+  const [f, r] = await Promise.all([fincasRepo.list(), razasRepo.list()]);
+  fincas.value = f;
+  razas.value = r;
+  await cargarBovino();
 });
 
 const orderedRecords = computed(() => {
-  if (!bovino.value) {
-    return [];
-  }
-
-  return registrosPeso
-    .filter((record) => record.bovinoId === bovino.value?.id)
-    .sort((a, b) => parseRecordDate(a.date).getTime() - parseRecordDate(b.date).getTime());
+  if (!bovino.value?.pesajes) return [];
+  return [...bovino.value.pesajes].sort(
+    (a, b) => parseRecordDate(a.date).getTime() - parseRecordDate(b.date).getTime(),
+  );
 });
 
 const maxWeight = computed(() => Math.max(...orderedRecords.value.map((record) => record.weightKg), 1));
-const finca = computed(() => fincas.find((item) => item.id === bovino.value?.farmId));
-const canManageStatus = computed(() => currentUser.value?.role === 'ganadero');
+const finca = computed(() => fincas.value.find((item) => item.id === bovino.value?.farmId));
+const canManageStatus = computed(() => {
+  const role = currentUser.value?.role;
+  return role === 'ganadero' || role === 'asistente' || role === 'admin';
+});
 
 const editando = ref(false);
 const editError = ref('');
 const form = reactive({
   name: '',
-  breed: '',
+  breedId: '',
   sex: 'Macho' as Bovino['sex'],
   observations: '',
 });
 
 const abrirEdicion = () => {
-  if (!bovino.value) {
-    return;
-  }
-
+  if (!bovino.value) return;
   form.name = bovino.value.name;
-  form.breed = bovino.value.breed;
+  form.breedId = bovino.value.breedId;
   form.sex = bovino.value.sex;
   form.observations = bovino.value.observations ?? '';
   editError.value = '';
@@ -225,66 +245,62 @@ const cerrarEdicion = () => {
   editError.value = '';
 };
 
-const guardarEdicion = () => {
-  if (!bovino.value) {
-    return;
-  }
-
+const guardarEdicion = async () => {
+  if (!bovino.value) return;
   editError.value = '';
-
   try {
-    actualizarBovino(bovino.value.id, {
+    const actualizado = await bovinosRepo.update(bovino.value.id, {
+      razaId: form.breedId,
       name: form.name,
-      breed: form.breed,
       sex: form.sex,
-      observations: form.observations,
+      notes: form.observations,
     });
+    bovino.value = actualizado;
     editando.value = false;
   } catch (error) {
     editError.value = error instanceof Error ? error.message : 'No fue posible guardar los cambios.';
   }
 };
-const statusOptions: Bovino['status'][] = ['Activo', 'Vendido', 'Fallecido', 'Inactivo'];
-const trendLabel = computed(() => {
-  if (orderedRecords.value.length < 2) {
-    return 'Sin datos suficientes';
-  }
 
+const marcarInactivo = async () => {
+  if (!bovino.value) return;
+  const motivo = prompt('Motivo de inactividad (obligatorio):');
+  if (!motivo || !motivo.trim()) return;
+  try {
+    bovino.value = await bovinosRepo.inactivar(bovino.value.id, motivo.trim());
+  } catch (error) {
+    editError.value = error instanceof Error ? error.message : 'No fue posible cambiar el estado.';
+    editando.value = false;
+  }
+};
+
+const reactivar = async () => {
+  if (!bovino.value) return;
+  try {
+    bovino.value = await bovinosRepo.activar(bovino.value.id);
+  } catch (error) {
+    editError.value = error instanceof Error ? error.message : 'No fue posible reactivar el bovino.';
+    editando.value = false;
+  }
+};
+
+const trendLabel = computed(() => {
+  if (orderedRecords.value.length < 2) return 'Sin datos suficientes';
   const first = orderedRecords.value[0];
   const last = orderedRecords.value.at(-1);
-
-  if (!last) {
-    return 'Sin datos suficientes';
-  }
-
+  if (!last) return 'Sin datos suficientes';
   const difference = last.weightKg - first.weightKg;
-
-  if (difference > 12) {
-    return 'Aumento de peso';
-  }
-
-  if (difference < -12) {
-    return 'Posible baja de peso';
-  }
-
+  if (difference > 12) return 'Aumento de peso';
+  if (difference < -12) return 'Posible baja de peso';
   return 'Peso estable';
 });
 const trendTone = computed(() => {
-  if (trendLabel.value === 'Aumento de peso') {
-    return 'good';
-  }
-
-  if (trendLabel.value === 'Posible baja de peso') {
-    return 'warning';
-  }
-
+  if (trendLabel.value === 'Aumento de peso') return 'good';
+  if (trendLabel.value === 'Posible baja de peso') return 'warning';
   return 'neutral';
 });
 const reporte = computed<ReporteBovino | null>(() => {
-  if (!bovino.value) {
-    return null;
-  }
-
+  if (!bovino.value) return null;
   return {
     bovino: bovino.value,
     finca: finca.value,
@@ -292,9 +308,7 @@ const reporte = computed<ReporteBovino | null>(() => {
   };
 });
 
-const barHeight = (weight: number) => {
-  return Math.max(24, Math.round((weight / maxWeight.value) * 100));
-};
+const barHeight = (weight: number) => Math.max(24, Math.round((weight / maxWeight.value) * 100));
 
 function parseRecordDate(value: string) {
   const [day, month, year] = value.split('/').map(Number);
@@ -304,21 +318,15 @@ function parseRecordDate(value: string) {
 const shortDate = (value: string) => value.split('/').slice(0, 2).join('/');
 
 const exportarCsv = () => {
-  if (reporte.value) {
-    exportBovinoCsv(reporte.value);
-  }
+  if (reporte.value) exportBovinoCsv(reporte.value);
 };
 
 const generarPdf = () => {
-  if (reporte.value) {
-    printBovinoReport(reporte.value);
-  }
+  if (reporte.value) printBovinoReport(reporte.value);
 };
 
 const compartirReporte = async () => {
-  if (reporte.value) {
-    await shareBovinoReport(reporte.value);
-  }
+  if (reporte.value) await shareBovinoReport(reporte.value);
 };
 </script>
 

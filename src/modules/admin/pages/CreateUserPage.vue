@@ -13,7 +13,7 @@
           </div>
         </header>
 
-        <form v-if="currentStep === 'details'" class="form" @submit.prevent="goToFarms">
+        <form v-if="currentStep === 'details'" class="form" @submit.prevent="crearUsuario">
           <section>
             <h2>Rol del usuario</h2>
             <div class="role-selector">
@@ -65,79 +65,25 @@
 
           <p class="notice">La contraseña se genera automáticamente y deberá cambiarse en el primer inicio de sesión.</p>
 
+          <p v-if="formError" class="form-error">{{ formError }}</p>
+
           <div class="actions">
             <router-link class="cancel-button" to="/app/usuarios">Cancelar</router-link>
-            <button class="next-button" type="submit" :disabled="!canContinueDetails">
-              Siguiente
-              <ion-icon :icon="arrowForwardOutline" />
+            <button class="next-button" type="submit" :disabled="!canContinueDetails || creando">
+              {{ creando ? 'Creando...' : 'Crear usuario' }}
+              <ion-icon v-if="!creando" :icon="arrowForwardOutline" />
             </button>
           </div>
         </form>
-
-        <section v-else-if="currentStep === 'fincas'" class="farms-step">
-          <section class="user-summary">
-            <div class="summary-avatar">
-              <ion-icon :icon="personOutline" />
-            </div>
-            <div>
-              <h2>{{ cleanFullName }}</h2>
-              <p>{{ cleanEmail }}</p>
-              <span>{{ roleLabel }}</span>
-            </div>
-          </section>
-
-          <h2>Fincas a asignar</h2>
-          <p class="notice compact">
-            El usuario solo podrá ver bovinos de las fincas que selecciones aquí.
-          </p>
-
-          <div v-if="availableFarms.length" class="farm-list">
-            <button
-              v-for="farm in availableFarms"
-              :key="farm.id"
-              :class="{ selected: selectedFarmIds.includes(farm.id) }"
-              type="button"
-              @click="toggleFarm(farm.id)"
-            >
-              <span class="check-box">
-                <ion-icon v-if="selectedFarmIds.includes(farm.id)" :icon="checkmarkOutline" />
-              </span>
-              <span>
-                <strong>{{ farm.name }}</strong>
-                <small>{{ farm.location }} - {{ farm.cattleCount }} cabezas</small>
-              </span>
-            </button>
-          </div>
-
-          <div v-else class="empty-panel">
-            <strong>No hay fincas registradas.</strong>
-            <span>Podrás asignarlas cuando existan fincas creadas en el sistema.</span>
-          </div>
-
-          <div class="selected-row">
-            <strong>Seleccionadas:</strong>
-            <span v-if="selectedFarmIds.length">{{ selectedFarmIds.length }}</span>
-            <span v-else>Ninguna</span>
-          </div>
-
-          <div class="actions">
-            <button class="cancel-button" type="button" @click="currentStep = 'details'">Atrás</button>
-            <button class="next-button" type="button" @click="createUser">Crear usuario</button>
-          </div>
-        </section>
 
         <section v-else class="success-step">
           <div class="success-icon">
             <ion-icon :icon="personOutline" />
           </div>
           <h2>Usuario creado</h2>
-          
-          <p v-if="selectedRole === 'veterinario' || selectedRole === 'asistente'">
-          Se preparó la cuenta de {{ cleanFullName }} con acceso a {{ selectedFarmIds.length }}
-          {{ selectedFarmIds.length === 1 ? 'finca' : 'fincas' }}.
-          </p>
-          <p v-else>
-          Se preparó la cuenta de {{ cleanFullName }} con el rol de {{ roleLabel }} listo para operar.
+
+          <p>
+            Se preparó la cuenta de {{ cleanFullName }} con el rol de {{ roleLabel }} listo para operar.
           </p>
 
           <section class="account-card">
@@ -159,10 +105,6 @@
                 <dd>
                   <span>{{ roleLabel }}</span>
                 </dd>
-              </div>
-              <div v-if="selectedRole === 'veterinario' || selectedRole === 'asistente'">
-                <dt>Fincas</dt>
-                <dd>{{ selectedFarmIds.length }} asignadas</dd>
               </div>
               <div>
                 <dt>Estado</dt>
@@ -186,7 +128,6 @@
 import { IonContent, IonIcon, IonPage, onIonViewWillLeave, onIonViewWillEnter } from '@ionic/vue';
 import {
   arrowForwardOutline,
-  checkmarkOutline,
   chevronBackOutline,
   copyOutline,
   eyeOutline,
@@ -196,21 +137,18 @@ import {
   refreshOutline,
 } from 'ionicons/icons';
 import { computed, ref } from 'vue';
-import type { Finca, Rol } from '@/shared/types/domain';
+import { usuariosRepo } from '@/shared/services/usuariosRepo';
+import type { Rol } from '@/shared/types/domain';
 
-type CreateStep = 'details' | 'fincas' | 'success';
+type CreateStep = 'details' | 'success';
 
-// 1. Definimos el SVG del ganadero en formato de datos (Data URI)
 const ganaderoIcon = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 8 8"><path fill="currentColor" d="M0 3q4 2 8 0L6 5Q4 6 2 5m2-3q2-3 2 1q-2 1-4 0q0-4 2-1"/></svg>';
 
-// 2. Pasamos el icono al arreglo de roles
 const roles: Array<{ label: string; value: Exclude<Rol, 'admin'>; icon: string }> = [
-  { label: 'Ganadero', value: 'ganadero', icon: ganaderoIcon }, // <-- Ahora usa el nuevo SVG
+  { label: 'Ganadero', value: 'ganadero', icon: ganaderoIcon },
   { label: 'Asistente', value: 'asistente', icon: idCardOutline },
   { label: 'Veterinario', value: 'veterinario', icon: pulseOutline },
 ];
-
-const availableFarms: Finca[] = [];
 
 const currentStep = ref<CreateStep>('details');
 const selectedRole = ref<Exclude<Rol, 'admin'>>('veterinario');
@@ -218,7 +156,8 @@ const fullName = ref('');
 const email = ref('');
 const temporaryPassword = ref(generateTemporaryPassword());
 const showPassword = ref(false);
-const selectedFarmIds = ref<string[]>([]);
+const creando = ref(false);
+const formError = ref('');
 
 const cleanFullName = computed(() => fullName.value.trim());
 const cleanEmail = computed(() => email.value.trim().toLowerCase());
@@ -236,6 +175,7 @@ onIonViewWillEnter(() => {
 onIonViewWillLeave(() => {
   const tabBar = document.querySelector('ion-tab-bar');
   if (tabBar) tabBar.style.display = 'flex';
+  resetForm();
 });
 
 function resetForm() {
@@ -245,18 +185,12 @@ function resetForm() {
   email.value = '';
   temporaryPassword.value = generateTemporaryPassword();
   showPassword.value = false;
-  selectedFarmIds.value = [];
+  formError.value = '';
 }
+
 const headerSubtitle = computed(() => {
-  if (currentStep.value === 'fincas') {
-    return 'Paso 2 de 2 - Asignar fincas';
-  }
-
-  if (currentStep.value === 'success') {
-    return 'Usuario creado exitosamente';
-  }
-
-  return 'Paso 1 de 2 - Datos básicos';
+  if (currentStep.value === 'success') return 'Usuario creado exitosamente';
+  return 'Datos básicos';
 });
 
 const canContinueDetails = computed(() => {
@@ -285,38 +219,25 @@ async function copyTemporaryPassword() {
   await navigator.clipboard?.writeText(temporaryPassword.value);
 }
 
-function goToFarms() {
+async function crearUsuario() {
   if (!canContinueDetails.value) return;
-
-  if (selectedRole.value === 'ganadero') {
-    createUser(); 
-  } else {
-    currentStep.value = 'fincas';
+  formError.value = '';
+  creando.value = true;
+  try {
+    await usuariosRepo.create({
+      fullName: cleanFullName.value,
+      email: cleanEmail.value,
+      password: temporaryPassword.value,
+      role: selectedRole.value,
+      activo: true,
+    });
+    currentStep.value = 'success';
+  } catch (error) {
+    formError.value = error instanceof Error ? error.message : 'No fue posible crear el usuario.';
+  } finally {
+    creando.value = false;
   }
 }
-
-function toggleFarm(farmId: string) {
-  if (selectedFarmIds.value.includes(farmId)) {
-    selectedFarmIds.value = selectedFarmIds.value.filter((id) => id !== farmId);
-    return;
-  }
-
-  selectedFarmIds.value = [...selectedFarmIds.value, farmId];
-}
-
-function createUser() {
-  currentStep.value = 'success';
-}
-
-onIonViewWillLeave(() => {
-  currentStep.value = 'details';
-  selectedRole.value = 'veterinario';
-  fullName.value = '';
-  email.value = '';
-  temporaryPassword.value = generateTemporaryPassword();
-  showPassword.value = false;
-  selectedFarmIds.value = [];
-});
 </script>
 
 <style scoped>
@@ -504,6 +425,16 @@ input::placeholder {
 
 .notice.compact {
   margin: 0;
+}
+
+.form-error {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(217, 45, 32, 0.1);
+  color: #b42318;
+  font-size: 11px;
+  font-weight: 800;
 }
 
 .actions {
