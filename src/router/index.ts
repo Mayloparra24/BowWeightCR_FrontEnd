@@ -21,6 +21,11 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('@/modules/auth/pages/LoginPage.vue'),
   },
   {
+    path: '/cambiar-contrasena',
+    name: 'change-password',
+    component: () => import('@/modules/auth/pages/ChangePasswordPage.vue'),
+  },
+  {
     path: '/app',
     component: () => import('@/shared/layouts/AppTabsLayout.vue'),
     meta: {
@@ -131,7 +136,16 @@ router.beforeEach((to) => {
   }
 
   if (to.name === 'login' && user) {
+    if (user.mustChangePassword) return '/cambiar-contrasena';
     return getDefaultRouteForRole(user.role);
+  }
+
+  if (to.name === 'change-password' && (!user || !user.mustChangePassword)) {
+    return user ? getDefaultRouteForRole(user.role) : '/login';
+  }
+
+  if (user && user.mustChangePassword && to.name !== 'change-password') {
+    return '/cambiar-contrasena';
   }
 
   if (user && allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {

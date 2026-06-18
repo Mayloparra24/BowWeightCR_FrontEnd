@@ -66,7 +66,7 @@ const handleLogout = async () => {
   display: flex;
   flex-direction: column;
   margin: 0 auto;
-  padding: 22px 18px 28px;
+  padding: var(--bw-page-pad-top) var(--bw-page-pad-x) var(--bw-page-pad-bottom-tabs);
   box-sizing: border-box;
 }
 

@@ -23,6 +23,7 @@ export interface UsuarioDTO {
   correo_electronico: string;
   rol: 'administrador' | 'ganadero' | 'veterinario' | 'asistente';
   esta_activo: boolean;
+  debe_cambiar_contrasena?: boolean;
   correo_verificado_en?: string | null;
   creado_en?: string | null;
 }

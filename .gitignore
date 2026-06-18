@@ -33,6 +33,9 @@ npm-debug.log*
 pnpm-lock.yaml
 .vscode/
 
+# Keystore (firma APK, no subir al repo)
+*.keystore
+
 # Env
 .env
 .env.local

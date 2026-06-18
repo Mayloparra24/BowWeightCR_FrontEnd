@@ -8,6 +8,7 @@ export interface Usuario {
   email: string;
   role: Rol;
   status: 'activo' | 'inactivo';
+  mustChangePassword?: boolean;
   creadoEn?: string;
 }
 
