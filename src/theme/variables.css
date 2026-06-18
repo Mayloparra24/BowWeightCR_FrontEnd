@@ -47,4 +47,13 @@ http://ionicframework.com/docs/theming/ */
     --bw-error-soft-text: #571010;
     --bw-warning: #fff08a;
     --bw-warning-text: #74601d;
+
+    /* Safe areas / navegación */
+    --bw-tab-bar-height: 72px;
+    --bw-safe-top: env(safe-area-inset-top);
+    --bw-safe-bottom: env(safe-area-inset-bottom);
+    --bw-page-pad-top: max(22px, var(--bw-safe-top));
+    --bw-page-pad-x: 18px;
+    --bw-page-pad-bottom-tabs: calc(var(--bw-tab-bar-height) + var(--bw-safe-bottom) + 12px);
+    --bw-page-pad-bottom-free: max(28px, var(--bw-safe-bottom));
 }

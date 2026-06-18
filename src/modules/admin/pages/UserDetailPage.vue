@@ -38,6 +38,28 @@
             </button>
             <p v-if="errorEstado" class="estado-error">{{ errorEstado }}</p>
           </article>
+
+          <article>
+            <h3>Contraseña</h3>
+            <div class="password-reset-box">
+              <input
+                v-model="nuevaPassword"
+                type="text"
+                readonly
+                placeholder="Generá una nueva contraseña"
+              />
+              <div class="password-actions">
+                <button type="button" class="status-action" :disabled="guardandoPassword" @click="generarPassword">
+                  Generar
+                </button>
+                <button type="button" class="status-action save" :disabled="!nuevaPassword || guardandoPassword" @click="guardarPassword">
+                  Guardar
+                </button>
+              </div>
+            </div>
+            <p v-if="passwordSuccess" class="password-success">{{ passwordSuccess }}</p>
+            <p v-if="passwordError" class="estado-error">{{ passwordError }}</p>
+          </article>
         </section>
 
         <section v-else class="empty-state">
@@ -62,6 +84,10 @@ const route = useRoute();
 const user = ref<Usuario | null>(null);
 const guardando = ref(false);
 const errorEstado = ref('');
+const nuevaPassword = ref('');
+const guardandoPassword = ref(false);
+const passwordError = ref('');
+const passwordSuccess = ref('');
 
 const cargar = async () => {
   try {
@@ -107,6 +133,33 @@ const toggleStatus = async () => {
     guardando.value = false;
   }
 };
+
+const generarPassword = () => {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+  let result = '';
+  for (let i = 0; i < 10; i += 1) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  nuevaPassword.value = result;
+  passwordError.value = '';
+  passwordSuccess.value = '';
+};
+
+const guardarPassword = async () => {
+  if (!user.value || !nuevaPassword.value) return;
+  guardandoPassword.value = true;
+  passwordError.value = '';
+  passwordSuccess.value = '';
+  try {
+    await usuariosRepo.update(user.value.id, { password: nuevaPassword.value });
+    passwordSuccess.value = `Contraseña actualizada. Nueva clave: ${nuevaPassword.value}`;
+    nuevaPassword.value = '';
+  } catch (error) {
+    passwordError.value = error instanceof Error ? error.message : 'No fue posible actualizar la contraseña.';
+  } finally {
+    guardandoPassword.value = false;
+  }
+};
 </script>
 
 <style scoped>
@@ -119,7 +172,7 @@ const toggleStatus = async () => {
   max-width: 390px;
   min-height: 100%;
   margin: 0 auto;
-  padding: 22px 18px 28px;
+  padding: var(--bw-page-pad-top) var(--bw-page-pad-x) var(--bw-page-pad-bottom-tabs);
   box-sizing: border-box;
 }
 
@@ -261,9 +314,43 @@ h3 {
   opacity: 0.5;
 }
 
+.status-action.save {
+  background: #2f75b5;
+}
+
 .estado-error {
   margin: 8px 0 0;
   color: #b42318;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.password-reset-box {
+  display: grid;
+  gap: 10px;
+}
+
+.password-reset-box input {
+  width: 100%;
+  min-height: 40px;
+  padding: 10px 12px;
+  box-sizing: border-box;
+  border: 1px solid #e4e8ef;
+  border-radius: 8px;
+  background: #f5f8fb;
+  color: #071832;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.password-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.password-success {
+  margin: 8px 0 0;
+  color: #052b66;
   font-size: 11px;
   font-weight: 800;
 }

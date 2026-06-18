@@ -105,7 +105,7 @@ const shareReport = async () => {
   align-content: start;
   gap: 16px;
   margin: 0 auto;
-  padding: 24px 18px 104px;
+  padding: var(--bw-page-pad-top) var(--bw-page-pad-x) var(--bw-page-pad-bottom-tabs);
   box-sizing: border-box;
 }
 

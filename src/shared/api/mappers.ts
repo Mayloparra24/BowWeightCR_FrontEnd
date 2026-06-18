@@ -42,6 +42,7 @@ export const mapUsuario = (dto: UsuarioDTO): Usuario => ({
   email: dto.correo_electronico,
   role: mapRol(dto.rol),
   status: dto.esta_activo ? 'activo' : 'inactivo',
+  mustChangePassword: dto.debe_cambiar_contrasena ?? false,
   creadoEn: dto.creado_en ?? undefined,
 });
 

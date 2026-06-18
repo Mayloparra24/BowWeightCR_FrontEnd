@@ -191,8 +191,7 @@ const visibleFarms = computed(() => {
 }
 
 .page-surface::part(scroll) {
-  display: flex;
-  justify-content: center;
+  display: block;
 }
 
 .farm-shell {
@@ -200,7 +199,7 @@ const visibleFarms = computed(() => {
   max-width: 390px;
   min-height: 100%;
   margin: 0 auto;
-  padding: 22px 18px 104px;
+  padding: var(--bw-page-pad-top) var(--bw-page-pad-x) var(--bw-page-pad-bottom-tabs);
   box-sizing: border-box;
 }
 
@@ -410,7 +409,7 @@ h2 {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  padding: 16px;
+  padding: 16px 16px max(16px, var(--bw-safe-bottom)) 16px;
   background: rgba(7, 24, 50, 0.45);
 }
 
@@ -419,7 +418,7 @@ h2 {
   max-width: 390px;
   display: grid;
   gap: 12px;
-  padding: 20px 18px 22px;
+  padding: 20px 18px calc(22px + var(--bw-safe-bottom));
   border-radius: 16px 16px 10px 10px;
   background: #f5f8fb;
   box-shadow: 0 -10px 30px rgba(7, 24, 50, 0.25);

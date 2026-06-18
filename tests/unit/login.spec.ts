@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils';
-import LoginPage from '../../src/modules/auth/pages/LoginPage.vue';
+import LoginPage from '@/modules/auth/pages/LoginPage.vue';
 import { describe, expect, test, vi } from 'vitest';
 
 vi.mock('vue-router', () => ({
@@ -14,5 +14,6 @@ describe('LoginPage.vue', () => {
 
     expect(wrapper.text()).toContain('BovWeight');
     expect(wrapper.text()).toContain('Iniciar sesión');
+    expect(wrapper.text()).toContain('Contactá al administrador');
   });
 });

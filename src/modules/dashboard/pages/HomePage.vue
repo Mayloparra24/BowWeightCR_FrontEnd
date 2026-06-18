@@ -18,10 +18,6 @@
               <ion-icon :icon="notificationsOutline" />
               <span v-if="notificationCount">{{ notificationCount }}</span>
             </router-link>
-            <button v-else type="button" aria-label="Notificaciones" class="notification-button">
-              <ion-icon :icon="notificationsOutline" />
-              <span v-if="notificationCount">{{ notificationCount }}</span>
-            </button>
             <div v-if="!isAdmin" class="user-avatar">{{ userInitials }}</div>
             <router-link v-if="isAdmin" to="/app/configuracion" aria-label="Configuración">
               <ion-icon :icon="settingsOutline" />
@@ -56,24 +52,22 @@
             </article>
           </section>
 
-          <section class="alerts-section">
-            <h1>Alertas del sistema</h1>
-            <div class="admin-alert-list">
-              <p>Error al procesar fotografía en una estimación.</p>
-              <p>No se pudo sincronizar la información de un pesaje.</p>
-            </div>
-          </section>
-
           <section class="events-section">
             <div class="section-heading">
               <h2>Últimos eventos</h2>
               <router-link to="/app/bitacora">Ver Bitácora</router-link>
             </div>
-            <div class="event-list">
+            <div v-if="eventsError" class="event-list empty">
+              <p>{{ eventsError }}</p>
+            </div>
+            <div v-else-if="adminEvents.length" class="event-list">
               <article v-for="event in adminEvents" :key="event.id">
-                <span>{{ event.message }}</span>
-                <time>{{ event.date }}</time>
+                <span>{{ event.descripcion }}</span>
+                <time>{{ event.creadaEl }}</time>
               </article>
+            </div>
+            <div v-else class="event-list empty">
+              <p>No hay eventos recientes.</p>
             </div>
           </section>
         </template>
@@ -269,6 +263,7 @@ import {
 } from 'ionicons/icons';
 import { computed, ref } from 'vue';
 import { currentUser } from '@/modules/auth/services/sessionService';
+import { bitacoraRepo } from '@/shared/services/bitacoraRepo';
 import { bovinosRepo } from '@/shared/services/bovinosRepo';
 import { fincasRepo } from '@/shared/services/fincasRepo';
 import { usuariosRepo } from '@/shared/services/usuariosRepo';
@@ -279,7 +274,7 @@ import {
   pendingOfflineCount,
   pendingOfflineItems,
 } from '@/shared/services/offlineService';
-import type { Bovino, Finca } from '@/shared/types/domain';
+import type { BitacoraEvento, Bovino, Finca } from '@/shared/types/domain';
 
 const userName = computed(() => currentUser.value?.fullName ?? 'Usuario');
 const isAdmin = computed(() => currentUser.value?.role === 'admin');
@@ -293,10 +288,13 @@ const canManageReminders = computed(() => {
 const fincas = ref<Finca[]>([]);
 const bovinos = ref<Bovino[]>([]);
 const totalUsuarios = ref(0);
+const adminEvents = ref<BitacoraEvento[]>([]);
+const eventsError = ref('');
 const cargando = ref(true);
 
 const cargarDatos = async () => {
   cargando.value = true;
+  eventsError.value = '';
   try {
     const [f, b] = await Promise.all([fincasRepo.list(), bovinosRepo.list()]);
     fincas.value = f;
@@ -307,6 +305,13 @@ const cargarDatos = async () => {
         totalUsuarios.value = meta.total;
       } catch {
         totalUsuarios.value = 0;
+      }
+      try {
+        const { items } = await bitacoraRepo.list({ perPage: 5 });
+        adminEvents.value = items;
+      } catch {
+        adminEvents.value = [];
+        eventsError.value = 'No se pudieron cargar los eventos.';
       }
     }
   } finally {
@@ -344,11 +349,6 @@ const adminStats = computed(() => ({
   bovinos: bovinos.value.filter((bovino) => bovino.status === 'Activo').length,
   estimates: bovinos.value.filter((bovino) => bovino.lastWeightKg > 0).length,
 }));
-const adminEvents = [
-  { id: 'event-login', message: 'Inicio de sesión de Ivan Chavarria.', date: 'Hoy' },
-  { id: 'event-photo', message: 'Foto enviada para estimación de peso.', date: 'Hoy' },
-  { id: 'event-error', message: 'No se pudo sincronizar la información.', date: 'Ayer' },
-];
 
 const bovinosRecientes = computed(() => bovinos.value.slice(0, 2));
 const reminders = computed(() => {
@@ -408,7 +408,7 @@ function daysSinceLastWeight(value: string) {
 .home-shell {
   width: 100%;
   min-height: 100%;
-  padding: 28px 20px 104px;
+  padding: var(--bw-page-pad-top) var(--bw-page-pad-x) var(--bw-page-pad-bottom-tabs);
   box-sizing: border-box;
   background:
     linear-gradient(180deg, rgba(245, 248, 251, 0.98), rgba(232, 239, 247, 0.92)),
