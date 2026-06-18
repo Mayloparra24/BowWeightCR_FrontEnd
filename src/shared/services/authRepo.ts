@@ -15,7 +15,12 @@ export const authRepo = {
       await setToken(data.data.token);
       return { user: mapUsuario(data.data.usuario), token: data.data.token };
     } catch (error) {
-      throw new Error(extractApiError(error));
+      throw new Error(
+        extractApiError(error, {
+          notFound: 'Credenciales incorrectas o usuario no registrado.',
+          fallback: 'No se pudo iniciar sesion. Revise los datos e intente de nuevo.',
+        }),
+      );
     }
   },
 

@@ -34,7 +34,9 @@
             <time>{{ event.creadaEl }}</time>
           </article>
 
-          <p v-if="!visibleEvents.length" class="empty-state">No hay eventos registrados.</p>
+          <p v-if="!visibleEvents.length" class="empty-state">
+            {{ loadError || 'No hay eventos registrados.' }}
+          </p>
         </section>
       </section>
     </ion-content>
@@ -50,12 +52,15 @@ import type { BitacoraEvento } from '@/shared/types/domain';
 
 const events = ref<BitacoraEvento[]>([]);
 const selectedFilter = ref('Todos');
+const loadError = ref('');
 
 onIonViewWillEnter(async () => {
   try {
+    loadError.value = '';
     const { items } = await bitacoraRepo.list({ perPage: 100 });
     events.value = items;
-  } catch {
+  } catch (error) {
+    loadError.value = error instanceof Error ? error.message : 'No fue posible cargar la bitacora.';
     events.value = [];
   }
 });
