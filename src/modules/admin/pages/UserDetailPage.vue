@@ -21,29 +21,22 @@
 
         <section v-if="user" class="detail-list" aria-label="Información del usuario">
           <article>
-            <h3>Fincas asignadas</h3>
-            <div v-if="assignedFarmNames.length" class="chip-row">
-              <span v-for="farmName in assignedFarmNames" :key="farmName">{{ farmName }}</span>
-            </div>
-            <p v-else>No hay fincas asignadas.</p>
-          </article>
-
-          <article>
             <h3>Último inicio de sesión</h3>
             <p>Sin registros.</p>
           </article>
 
           <article>
             <h3>Cuenta creada</h3>
-            <p>Sin registro.</p>
+            <p>{{ fechaCreacion }}</p>
           </article>
 
           <article>
             <h3>Estado</h3>
             <span class="status-pill" :class="user.status">{{ user.status }}</span>
-            <button class="status-action" type="button" @click="toggleStatus">
+            <button class="status-action" type="button" :disabled="guardando" @click="toggleStatus">
               {{ user.status === 'activo' ? 'Desactivar cuenta' : 'Activar cuenta' }}
             </button>
+            <p v-if="errorEstado" class="estado-error">{{ errorEstado }}</p>
           </article>
         </section>
 
@@ -57,26 +50,30 @@
 </template>
 
 <script setup lang="ts">
-import { IonContent, IonIcon, IonPage } from '@ionic/vue';
+import { IonContent, IonIcon, IonPage, onIonViewWillEnter } from '@ionic/vue';
 import { chevronBackOutline } from 'ionicons/icons';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useRoute } from 'vue-router';
-import { usuariosAdmin } from '@/modules/admin/data/users';
-import { fincas } from '@/shared/data/mockData';
-import type { Rol } from '@/shared/types/domain';
+import { usuariosRepo } from '@/shared/services/usuariosRepo';
+import { formatFecha } from '@/shared/api/mappers';
+import type { Rol, Usuario } from '@/shared/types/domain';
 
 const route = useRoute();
-const user = computed(() => usuariosAdmin.find((item) => item.id === route.params.id));
+const user = ref<Usuario | null>(null);
+const guardando = ref(false);
+const errorEstado = ref('');
 
-const assignedFarmNames = computed(() => {
-  if (!user.value) {
-    return [];
+const cargar = async () => {
+  try {
+    user.value = await usuariosRepo.get(String(route.params.id));
+  } catch {
+    user.value = null;
   }
+};
 
-  return user.value.assignedFarmIds.map((farmId) => {
-    return fincas.find((finca) => finca.id === farmId)?.name ?? farmId;
-  });
-});
+onIonViewWillEnter(cargar);
+
+const fechaCreacion = computed(() => formatFecha(user.value?.creadoEn) || 'Sin registro');
 
 const initials = computed(() => {
   const name = user.value?.fullName ?? '';
@@ -90,27 +87,25 @@ const initials = computed(() => {
 });
 
 const roleLabel = (role: Rol) => {
-  if (role === 'veterinario') {
-    return 'Veterinario';
-  }
-
-  if (role === 'admin') {
-    return 'Admin';
-  }
-
-  if (role === 'asistente') {
-    return 'Asistente';
-  }
-
+  if (role === 'veterinario') return 'Veterinario';
+  if (role === 'admin') return 'Admin';
+  if (role === 'asistente') return 'Asistente';
   return 'Ganadero';
 };
 
-const toggleStatus = () => {
-  if (!user.value) {
-    return;
+const toggleStatus = async () => {
+  if (!user.value) return;
+  guardando.value = true;
+  errorEstado.value = '';
+  try {
+    const nuevoActivo = user.value.status !== 'activo';
+    const actualizado = await usuariosRepo.update(user.value.id, { activo: nuevoActivo });
+    user.value = actualizado;
+  } catch (error) {
+    errorEstado.value = error instanceof Error ? error.message : 'No fue posible cambiar el estado.';
+  } finally {
+    guardando.value = false;
   }
-
-  user.value.status = user.value.status === 'activo' ? 'inactivo' : 'activo';
 };
 </script>
 
@@ -260,6 +255,17 @@ h3 {
   padding: 0 14px;
   font-size: 12px;
   font-weight: 900;
+}
+
+.status-action:disabled {
+  opacity: 0.5;
+}
+
+.estado-error {
+  margin: 8px 0 0;
+  color: #b42318;
+  font-size: 11px;
+  font-weight: 800;
 }
 
 .empty-state {

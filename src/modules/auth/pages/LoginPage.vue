@@ -115,7 +115,7 @@ const isSubmitting = ref(false);
 const validateForm = () => {
   if (!email.value.trim()) {
     errorField.value = 'email';
-    return 'Ingrese su correo o usuario.';
+    return 'Ingrese su correo.';
   }
 
   if (!email.value.includes('@')) {
@@ -123,9 +123,9 @@ const validateForm = () => {
     return 'Ingrese un correo válido.';
   }
 
-  if (password.value.length < 6) {
+  if (!password.value) {
     errorField.value = 'password';
-    return 'La contraseña debe tener al menos 6 caracteres.';
+    return 'Ingrese su contraseña.';
   }
 
   errorField.value = '';

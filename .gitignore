@@ -32,3 +32,8 @@ npm-debug.log*
 /www
 pnpm-lock.yaml
 .vscode/
+
+# Env
+.env
+.env.local
+.env.*.local

@@ -15,7 +15,7 @@
 
         <div class="filter-row">
           <button
-            v-for="option in filters"
+            v-for="option in filtros"
             :key="option"
             :class="{ active: selectedFilter === option }"
             type="button"
@@ -27,8 +27,11 @@
 
         <section class="log-panel" :class="{ empty: !visibleEvents.length }" aria-label="Eventos del sistema">
           <article v-for="event in visibleEvents" :key="event.id" class="log-row">
-            <span>{{ event.message }}</span>
-            <time>{{ event.date }}</time>
+            <span>
+              <strong>{{ event.descripcion }}</strong>
+              <em v-if="event.usuarioNombre">{{ event.usuarioNombre }} · {{ event.accion }}</em>
+            </span>
+            <time>{{ event.creadaEl }}</time>
           </article>
 
           <p v-if="!visibleEvents.length" class="empty-state">No hay eventos registrados.</p>
@@ -39,28 +42,32 @@
 </template>
 
 <script setup lang="ts">
-import { IonContent, IonIcon, IonPage } from '@ionic/vue';
+import { IonContent, IonIcon, IonPage, onIonViewWillEnter } from '@ionic/vue';
 import { chevronBackOutline } from 'ionicons/icons';
 import { computed, ref } from 'vue';
+import { bitacoraRepo } from '@/shared/services/bitacoraRepo';
+import type { BitacoraEvento } from '@/shared/types/domain';
 
-const filters = ['Todos', 'Sesiones', 'Bovinos', 'Usuarios', 'Errores'];
+const events = ref<BitacoraEvento[]>([]);
 const selectedFilter = ref('Todos');
 
-const events: Array<{ id: string; category: string; message: string; date: string }> = [
-  { id: 'log-1', category: 'Sesiones', message: 'Inicio de sesión exitoso.', date: 'Hoy' },
-  { id: 'log-2', category: 'Bovinos', message: 'Foto enviada para estimación de peso.', date: 'Hoy' },
-  { id: 'log-3', category: 'Bovinos', message: 'Estimación generada correctamente.', date: 'Hoy' },
-  { id: 'log-4', category: 'Errores', message: 'Error al procesar fotografía.', date: 'Ayer' },
-  { id: 'log-5', category: 'Usuarios', message: 'Cuenta de usuario desactivada.', date: 'Ayer' },
-  { id: 'log-6', category: 'Errores', message: 'El servidor no respondió.', date: 'Ayer' },
-];
+onIonViewWillEnter(async () => {
+  try {
+    const { items } = await bitacoraRepo.list({ perPage: 100 });
+    events.value = items;
+  } catch {
+    events.value = [];
+  }
+});
+
+const filtros = computed(() => {
+  const tipos = Array.from(new Set(events.value.map((event) => event.entidadTipo))).filter(Boolean);
+  return ['Todos', ...tipos];
+});
 
 const visibleEvents = computed(() => {
-  if (selectedFilter.value === 'Todos') {
-    return events;
-  }
-
-  return events.filter((event) => event.category === selectedFilter.value);
+  if (selectedFilter.value === 'Todos') return events.value;
+  return events.value.filter((event) => event.entidadTipo === selectedFilter.value);
 });
 </script>
 
@@ -164,6 +171,23 @@ h1 {
   color: #dbe8f7;
   font-size: 11px;
   line-height: 1.35;
+}
+
+.log-row span {
+  display: grid;
+  gap: 3px;
+}
+
+.log-row strong {
+  color: #ffffff;
+  font-weight: 900;
+}
+
+.log-row em {
+  color: #8bb7e5;
+  font-style: normal;
+  font-size: 10px;
+  font-weight: 700;
 }
 
 time {

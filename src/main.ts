@@ -1,6 +1,7 @@
 import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router';
+import { initSession } from '@/modules/auth/services/sessionService';
 
 import { IonicVue } from '@ionic/vue';
 
@@ -38,6 +39,9 @@ const app = createApp(App)
   .use(IonicVue)
   .use(router);
 
-router.isReady().then(() => {
+router.isReady().then(async () => {
+  // Revalida la sesión (token + /me) antes de montar para que el guard de
+  // navegación conozca el usuario real y no redirija a login por error.
+  await initSession();
   app.mount('#app');
 });
