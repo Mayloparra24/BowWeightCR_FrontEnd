@@ -41,36 +41,43 @@
 </template>
 
 <script setup lang="ts">
-import { IonContent, IonIcon, IonPage } from '@ionic/vue';
+import { IonContent, IonIcon, IonPage, onIonViewWillEnter } from '@ionic/vue';
 import { chevronBackOutline, downloadOutline, searchOutline } from 'ionicons/icons';
 import { computed, ref } from 'vue';
 import { useRoute } from 'vue-router';
-import { currentUser } from '@/modules/auth/services/sessionService';
-import { bovinos, fincas } from '@/shared/data/mockData';
+import { bovinosRepo } from '@/shared/services/bovinosRepo';
+import { fincasRepo } from '@/shared/services/fincasRepo';
 import BovinoListItem from '@/shared/components/BovinoListItem.vue';
 import { exportInventarioCsv } from '@/shared/services/reportService';
+import type { Bovino, Finca } from '@/shared/types/domain';
 
 const search = ref('');
 const route = useRoute();
 
+const bovinos = ref<Bovino[]>([]);
+const fincas = ref<Finca[]>([]);
+
+onIonViewWillEnter(async () => {
+  const [b, f] = await Promise.all([bovinosRepo.list(), fincasRepo.list()]);
+  bovinos.value = b;
+  fincas.value = f;
+});
+
 const bovinosVisibles = computed(() => {
-  const assignedFarmIds = currentUser.value?.assignedFarmIds ?? [];
   const selectedFarmId = typeof route.query.finca === 'string' ? route.query.finca : '';
   const normalizedSearch = search.value.trim().toLowerCase();
 
-  return bovinos.filter((bovino) => {
-    const canSeeFarm = assignedFarmIds.includes(bovino.farmId);
+  return bovinos.value.filter((bovino) => {
     const matchesFarm = !selectedFarmId || bovino.farmId === selectedFarmId;
     const matchesSearch =
       bovino.name.toLowerCase().includes(normalizedSearch) ||
       bovino.earTag.includes(normalizedSearch);
-
-    return canSeeFarm && matchesFarm && matchesSearch;
+    return matchesFarm && matchesSearch;
   });
 });
 
 const exportarInventario = () => {
-  exportInventarioCsv(bovinosVisibles.value, fincas);
+  exportInventarioCsv(bovinosVisibles.value, fincas.value);
 };
 </script>
 
@@ -89,7 +96,7 @@ const exportarInventario = () => {
   max-width: 390px;
   min-height: 100%;
   margin: 0 auto;
-  padding: 22px 18px 104px;
+  padding: var(--bw-page-pad-top) var(--bw-page-pad-x) var(--bw-page-pad-bottom-tabs);
   box-sizing: border-box;
 }
 

@@ -2,7 +2,6 @@ import { Capacitor } from '@capacitor/core';
 import { Directory, Filesystem } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { Toast } from '@capacitor/toast';
-import { jsPDF } from 'jspdf';
 import type { Bovino, Finca, RegistroPeso } from '@/shared/types/domain';
 
 export interface ReporteBovino {
@@ -165,7 +164,8 @@ const COLOR_PRIMARY: [number, number, number] = [5, 43, 102];
 const COLOR_TEXT: [number, number, number] = [7, 24, 50];
 const COLOR_MUTED: [number, number, number] = [86, 96, 113];
 
-const pdfBovino = (report: ReporteBovino): Blob => {
+const pdfBovino = async (report: ReporteBovino): Promise<Blob> => {
+  const { jsPDF } = await import('jspdf');
   const doc = new jsPDF({ unit: 'pt', format: 'a4' });
   const marginX = 48;
   let y = 56;
@@ -243,7 +243,8 @@ const pdfBovino = (report: ReporteBovino): Blob => {
   return doc.output('blob');
 };
 
-const pdfInventario = (bovinos: Bovino[], fincas: Finca[], titulo: string): Blob => {
+const pdfInventario = async (bovinos: Bovino[], fincas: Finca[], titulo: string): Promise<Blob> => {
+  const { jsPDF } = await import('jspdf');
   const doc = new jsPDF({ unit: 'pt', format: 'a4' });
   const marginX = 48;
   let y = 56;
@@ -346,13 +347,13 @@ export const exportBovinoCsv = async (report: ReporteBovino) => {
 /** Boton "documento": genera y guarda el reporte del bovino en PDF. */
 export const printBovinoReport = async (report: ReporteBovino) => {
   const filename = `reporte-${baseName(report)}.pdf`;
-  await guardarArchivo(filename, pdfBovino(report));
+  await guardarArchivo(filename, await pdfBovino(report));
 };
 
 /** Boton "compartir": comparte el PDF del bovino como archivo adjunto. */
 export const shareBovinoReport = async (report: ReporteBovino) => {
   const filename = `reporte-${baseName(report)}.pdf`;
-  await compartirArchivo(filename, pdfBovino(report), 'application/pdf', `Reporte de ${report.bovino.name}`);
+  await compartirArchivo(filename, await pdfBovino(report), 'application/pdf', `Reporte de ${report.bovino.name}`);
 };
 
 /** Inventario (SharedReportPage): CSV (guarda). */
@@ -362,14 +363,14 @@ export const exportInventarioCsv = async (bovinos: Bovino[], fincas: Finca[]) =>
 
 /** Inventario (SharedReportPage): PDF (guarda). */
 export const exportInventarioPdf = async (bovinos: Bovino[], fincas: Finca[], titulo: string) => {
-  await guardarArchivo('inventario-bovweight.pdf', pdfInventario(bovinos, fincas, titulo));
+  await guardarArchivo('inventario-bovweight.pdf', await pdfInventario(bovinos, fincas, titulo));
 };
 
 /** Inventario (SharedReportPage): compartir PDF como archivo. */
 export const shareInventarioPdf = async (bovinos: Bovino[], fincas: Finca[], titulo: string) => {
   await compartirArchivo(
     'inventario-bovweight.pdf',
-    pdfInventario(bovinos, fincas, titulo),
+    await pdfInventario(bovinos, fincas, titulo),
     'application/pdf',
     'Reporte BovWeightCR',
   );

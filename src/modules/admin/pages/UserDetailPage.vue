@@ -21,29 +21,44 @@
 
         <section v-if="user" class="detail-list" aria-label="Información del usuario">
           <article>
-            <h3>Fincas asignadas</h3>
-            <div v-if="assignedFarmNames.length" class="chip-row">
-              <span v-for="farmName in assignedFarmNames" :key="farmName">{{ farmName }}</span>
-            </div>
-            <p v-else>No hay fincas asignadas.</p>
-          </article>
-
-          <article>
             <h3>Último inicio de sesión</h3>
             <p>Sin registros.</p>
           </article>
 
           <article>
             <h3>Cuenta creada</h3>
-            <p>Sin registro.</p>
+            <p>{{ fechaCreacion }}</p>
           </article>
 
           <article>
             <h3>Estado</h3>
             <span class="status-pill" :class="user.status">{{ user.status }}</span>
-            <button class="status-action" type="button" @click="toggleStatus">
+            <button class="status-action" type="button" :disabled="guardando" @click="toggleStatus">
               {{ user.status === 'activo' ? 'Desactivar cuenta' : 'Activar cuenta' }}
             </button>
+            <p v-if="errorEstado" class="estado-error">{{ errorEstado }}</p>
+          </article>
+
+          <article>
+            <h3>Contraseña</h3>
+            <div class="password-reset-box">
+              <input
+                v-model="nuevaPassword"
+                type="text"
+                readonly
+                placeholder="Generá una nueva contraseña"
+              />
+              <div class="password-actions">
+                <button type="button" class="status-action" :disabled="guardandoPassword" @click="generarPassword">
+                  Generar
+                </button>
+                <button type="button" class="status-action save" :disabled="!nuevaPassword || guardandoPassword" @click="guardarPassword">
+                  Guardar
+                </button>
+              </div>
+            </div>
+            <p v-if="passwordSuccess" class="password-success">{{ passwordSuccess }}</p>
+            <p v-if="passwordError" class="estado-error">{{ passwordError }}</p>
           </article>
         </section>
 
@@ -57,26 +72,34 @@
 </template>
 
 <script setup lang="ts">
-import { IonContent, IonIcon, IonPage } from '@ionic/vue';
+import { IonContent, IonIcon, IonPage, onIonViewWillEnter } from '@ionic/vue';
 import { chevronBackOutline } from 'ionicons/icons';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useRoute } from 'vue-router';
-import { usuariosAdmin } from '@/modules/admin/data/users';
-import { fincas } from '@/shared/data/mockData';
-import type { Rol } from '@/shared/types/domain';
+import { usuariosRepo } from '@/shared/services/usuariosRepo';
+import { formatFecha } from '@/shared/api/mappers';
+import type { Rol, Usuario } from '@/shared/types/domain';
 
 const route = useRoute();
-const user = computed(() => usuariosAdmin.find((item) => item.id === route.params.id));
+const user = ref<Usuario | null>(null);
+const guardando = ref(false);
+const errorEstado = ref('');
+const nuevaPassword = ref('');
+const guardandoPassword = ref(false);
+const passwordError = ref('');
+const passwordSuccess = ref('');
 
-const assignedFarmNames = computed(() => {
-  if (!user.value) {
-    return [];
+const cargar = async () => {
+  try {
+    user.value = await usuariosRepo.get(String(route.params.id));
+  } catch {
+    user.value = null;
   }
+};
 
-  return user.value.assignedFarmIds.map((farmId) => {
-    return fincas.find((finca) => finca.id === farmId)?.name ?? farmId;
-  });
-});
+onIonViewWillEnter(cargar);
+
+const fechaCreacion = computed(() => formatFecha(user.value?.creadoEn) || 'Sin registro');
 
 const initials = computed(() => {
   const name = user.value?.fullName ?? '';
@@ -90,27 +113,52 @@ const initials = computed(() => {
 });
 
 const roleLabel = (role: Rol) => {
-  if (role === 'veterinario') {
-    return 'Veterinario';
-  }
-
-  if (role === 'admin') {
-    return 'Admin';
-  }
-
-  if (role === 'asistente') {
-    return 'Asistente';
-  }
-
+  if (role === 'veterinario') return 'Veterinario';
+  if (role === 'admin') return 'Admin';
+  if (role === 'asistente') return 'Asistente';
   return 'Ganadero';
 };
 
-const toggleStatus = () => {
-  if (!user.value) {
-    return;
+const toggleStatus = async () => {
+  if (!user.value) return;
+  guardando.value = true;
+  errorEstado.value = '';
+  try {
+    const nuevoActivo = user.value.status !== 'activo';
+    const actualizado = await usuariosRepo.update(user.value.id, { activo: nuevoActivo });
+    user.value = actualizado;
+  } catch (error) {
+    errorEstado.value = error instanceof Error ? error.message : 'No fue posible cambiar el estado.';
+  } finally {
+    guardando.value = false;
   }
+};
 
-  user.value.status = user.value.status === 'activo' ? 'inactivo' : 'activo';
+const generarPassword = () => {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+  let result = '';
+  for (let i = 0; i < 10; i += 1) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  nuevaPassword.value = result;
+  passwordError.value = '';
+  passwordSuccess.value = '';
+};
+
+const guardarPassword = async () => {
+  if (!user.value || !nuevaPassword.value) return;
+  guardandoPassword.value = true;
+  passwordError.value = '';
+  passwordSuccess.value = '';
+  try {
+    await usuariosRepo.update(user.value.id, { password: nuevaPassword.value });
+    passwordSuccess.value = `Contraseña actualizada. Nueva clave: ${nuevaPassword.value}`;
+    nuevaPassword.value = '';
+  } catch (error) {
+    passwordError.value = error instanceof Error ? error.message : 'No fue posible actualizar la contraseña.';
+  } finally {
+    guardandoPassword.value = false;
+  }
 };
 </script>
 
@@ -124,7 +172,7 @@ const toggleStatus = () => {
   max-width: 390px;
   min-height: 100%;
   margin: 0 auto;
-  padding: 22px 18px 28px;
+  padding: var(--bw-page-pad-top) var(--bw-page-pad-x) var(--bw-page-pad-bottom-tabs);
   box-sizing: border-box;
 }
 
@@ -260,6 +308,51 @@ h3 {
   padding: 0 14px;
   font-size: 12px;
   font-weight: 900;
+}
+
+.status-action:disabled {
+  opacity: 0.5;
+}
+
+.status-action.save {
+  background: #2f75b5;
+}
+
+.estado-error {
+  margin: 8px 0 0;
+  color: #b42318;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.password-reset-box {
+  display: grid;
+  gap: 10px;
+}
+
+.password-reset-box input {
+  width: 100%;
+  min-height: 40px;
+  padding: 10px 12px;
+  box-sizing: border-box;
+  border: 1px solid #e4e8ef;
+  border-radius: 8px;
+  background: #f5f8fb;
+  color: #071832;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.password-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.password-success {
+  margin: 8px 0 0;
+  color: #052b66;
+  font-size: 11px;
+  font-weight: 800;
 }
 
 .empty-state {

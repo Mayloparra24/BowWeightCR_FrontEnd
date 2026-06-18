@@ -85,8 +85,8 @@ ion-tab-bar {
   right: 0;
   bottom: 0;
   width: 100%;
-  height: 72px;
-  padding: 0;
+  height: calc(var(--bw-tab-bar-height) + var(--bw-safe-bottom));
+  padding: 0 0 var(--bw-safe-bottom) 0;
   border-top: 1px solid rgba(8, 37, 74, 0.08);
   border-radius: 0;
   background: rgba(255, 255, 255, 0.98);

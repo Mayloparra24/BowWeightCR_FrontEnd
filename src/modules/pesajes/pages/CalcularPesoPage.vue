@@ -127,7 +127,7 @@
               <span>Selecciona la finca</span>
               <select v-model="nuevo.farmId">
                 <option value="" disabled>Elegir finca...</option>
-                <option v-for="farm in fincasAsignadas" :key="farm.id" :value="farm.id">
+                <option v-for="farm in fincas" :key="farm.id" :value="farm.id">
                   {{ farm.name }}
                 </option>
               </select>
@@ -135,9 +135,9 @@
 
             <label>
               <span>Selecciona la raza</span>
-              <select v-model="nuevo.breed">
+              <select v-model="nuevo.breedId">
                 <option value="" disabled>Elegir raza...</option>
-                <option v-for="raza in razasDisponibles" :key="raza" :value="raza">{{ raza }}</option>
+                <option v-for="raza in razas" :key="raza.id" :value="raza.id">{{ raza.nombre }}</option>
               </select>
             </label>
 
@@ -146,14 +146,6 @@
               <select v-model="nuevo.sex">
                 <option value="Macho">Macho</option>
                 <option value="Hembra">Hembra</option>
-              </select>
-            </label>
-
-            <label>
-              <span>Estado</span>
-              <select v-model="nuevo.status">
-                <option value="Activo">Activo</option>
-                <option value="Inactivo">Inactivo</option>
               </select>
             </label>
 
@@ -226,7 +218,11 @@
             <ion-icon :icon="checkmarkOutline" />
           </div>
           <h2>Pesaje guardado</h2>
-          <p>
+          <p v-if="pendienteBackend">
+            La fotografía de {{ resultadoBovinoNombre }} se recibió y se procesará
+            cuando el microservicio de IA esté disponible.
+          </p>
+          <p v-else>
             Se registró un peso de {{ pesoGuardado }} Kg para {{ resultadoBovinoNombre }}
             en su historial.
           </p>
@@ -247,32 +243,33 @@
 </template>
 
 <script setup lang="ts">
-import { IonContent, IonIcon, IonPage, IonSpinner, onIonViewWillLeave } from '@ionic/vue';
+import { IonContent, IonIcon, IonPage, IonSpinner, onIonViewWillEnter, onIonViewWillLeave } from '@ionic/vue';
 import { cameraOutline, checkmarkOutline, chevronBackOutline } from 'ionicons/icons';
 import { computed, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { currentUser } from '@/modules/auth/services/sessionService';
-import { bovinos, fincas } from '@/shared/data/mockData';
-import type { Bovino } from '@/shared/types/domain';
-import { enqueueOfflineItem, isOnline } from '@/shared/services/offlineService';
+import { bovinosRepo } from '@/shared/services/bovinosRepo';
+import { fincasRepo } from '@/shared/services/fincasRepo';
+import { razasRepo } from '@/shared/services/razasRepo';
+import { pesajesRepo } from '@/shared/services/pesajesRepo';
 import {
-  estimarPesoBovinoExistente,
-  estimarPesoBovinoNuevo,
-  existeArete,
-  guardarPesaje,
-  razasDisponibles,
-  registrarBovino,
-} from '@/modules/pesajes/services/estimacionService';
+  enqueueEstimacion,
+  isOnline,
+} from '@/shared/services/offlineService';
+import { compressImage } from '@/shared/utils/bovinoPhoto';
+import type { Bovino, Finca, Raza } from '@/shared/types/domain';
 
 type FlowStep = 'foto' | 'existe' | 'seleccion' | 'registro' | 'procesando' | 'resultado' | 'exito';
-
-const FOTO_GENERICA = 'https://images.unsplash.com/photo-1527153857715-3908f2bae5e8?auto=format&fit=crop&w=180&q=80';
 
 const router = useRouter();
 
 const step = ref<FlowStep>('foto');
 const fileInput = ref<HTMLInputElement | null>(null);
 const photoUrl = ref('');
+const photoDataUrl = ref('');
+
+const fincas = ref<Finca[]>([]);
+const bovinos = ref<Bovino[]>([]);
+const razas = ref<Raza[]>([]);
 
 const selectedBovinoId = ref('');
 const modoNuevo = ref(false);
@@ -281,9 +278,8 @@ const nuevo = reactive({
   name: '',
   earTag: '',
   farmId: '',
-  breed: '',
+  breedId: '',
   sex: 'Macho' as Bovino['sex'],
-  status: 'Activo' as Bovino['status'],
   birthDate: '',
   notes: '',
 });
@@ -296,41 +292,39 @@ const pesoGuardado = ref(0);
 const bovinoGuardadoId = ref('');
 const formError = ref('');
 const offlineQueued = ref(false);
+const pendienteBackend = ref(false);
+const pesajeId = ref('');
 
-const assignedFarmIds = computed(() => currentUser.value?.assignedFarmIds ?? []);
-const fincasAsignadas = computed(() => fincas.filter((farm) => assignedFarmIds.value.includes(farm.id)));
-const bovinosDisponibles = computed(() => {
-  return bovinos.filter((item) => item.status === 'Activo' && assignedFarmIds.value.includes(item.farmId));
-});
-
-const bovinoSeleccionado = computed(() => bovinos.find((item) => item.id === selectedBovinoId.value));
+const bovinosDisponibles = computed(() => bovinos.value.filter((item) => item.status === 'Activo'));
+const bovinoSeleccionado = computed(() => bovinos.value.find((item) => item.id === selectedBovinoId.value));
 
 const hoyIso = new Date().toISOString().slice(0, 10);
 
+onIonViewWillEnter(async () => {
+  try {
+    const [f, b, r] = await Promise.all([fincasRepo.list(), bovinosRepo.list(), razasRepo.list()]);
+    fincas.value = f;
+    bovinos.value = b;
+    razas.value = r;
+  } catch (error) {
+    formError.value = error instanceof Error ? error.message : 'No fue posible cargar los datos.';
+  }
+});
+
 const stepSubtitle = computed(() => {
   switch (step.value) {
-    case 'foto':
-      return 'Paso 1 - Fotografía del bovino';
-    case 'existe':
-      return 'Paso 2 - Identificar el bovino';
-    case 'seleccion':
-      return 'Paso 2 - Bovino existente';
-    case 'registro':
-      return 'Paso 2 - Registro de bovino';
-    case 'procesando':
-      return 'Procesando con IA';
-    case 'resultado':
-      return 'Paso 3 - Resultado de la estimación';
-    default:
-      return 'Pesaje registrado correctamente';
+    case 'foto': return 'Paso 1 - Fotografía del bovino';
+    case 'existe': return 'Paso 2 - Identificar el bovino';
+    case 'seleccion': return 'Paso 2 - Bovino existente';
+    case 'registro': return 'Paso 2 - Registro de bovino';
+    case 'procesando': return 'Procesando con IA';
+    case 'resultado': return 'Paso 3 - Resultado de la estimación';
+    default: return 'Pesaje registrado correctamente';
   }
 });
 
 const resultadoBovinoNombre = computed(() => {
-  if (modoNuevo.value) {
-    return nuevo.name.trim() || 'Bovino nuevo';
-  }
-
+  if (modoNuevo.value) return nuevo.name.trim() || 'Bovino nuevo';
   return bovinoSeleccionado.value?.name ?? 'Bovino';
 });
 
@@ -341,12 +335,12 @@ const formularioValido = computed(() => {
     nuevo.name.trim().length >= 2 &&
     nuevo.earTag.trim().length >= 6 &&
     nuevo.farmId !== '' &&
-    nuevo.breed !== '' &&
+    nuevo.breedId !== '' &&
     nuevo.birthDate !== ''
   );
 });
 
-const farmName = (farmId: string) => fincas.find((farm) => farm.id === farmId)?.name ?? 'Sin finca';
+const farmName = (farmId: string) => fincas.value.find((farm) => farm.id === farmId)?.name ?? 'Sin finca';
 
 const openCamera = () => {
   if (fileInput.value) {
@@ -358,104 +352,145 @@ const openCamera = () => {
 const onPhotoSelected = (event: Event) => {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0];
+  if (!file) return;
 
-  if (!file) {
-    return;
-  }
+  if (photoUrl.value.startsWith('blob:')) URL.revokeObjectURL(photoUrl.value);
 
-  // Liberar cualquier blob previo (si quedara de una version anterior).
-  if (photoUrl.value.startsWith('blob:')) {
-    URL.revokeObjectURL(photoUrl.value);
-  }
-
-  // Se guarda como data URL (base64) en lugar de un blob: objectURL.
-  // Un blob: solo es valido en la sesion que lo creo, asi que la foto se veria
-  // rota en otras vistas/usuarios o tras refrescar. El base64 viaja dentro del
-  // propio string photoUrl y se renderiza en cualquier lado.
   const reader = new FileReader();
   reader.onload = () => {
-    photoUrl.value = typeof reader.result === 'string' ? reader.result : '';
+    const dataUrl = typeof reader.result === 'string' ? reader.result : '';
+    photoUrl.value = dataUrl;
+    photoDataUrl.value = dataUrl;
   };
   reader.readAsDataURL(file);
 
   setTimeout(() => {
-    if (fileInput.value) {
-      fileInput.value.value = '';
-    }
+    if (fileInput.value) fileInput.value.value = '';
   }, 100);
 };
 
 onIonViewWillLeave(() => {
-  if (photoUrl.value.startsWith('blob:')) {
-    URL.revokeObjectURL(photoUrl.value);
-  }
+  if (photoUrl.value.startsWith('blob:')) URL.revokeObjectURL(photoUrl.value);
   photoUrl.value = '';
+  photoDataUrl.value = '';
   step.value = 'foto';
 });
 
 const goBack = () => {
   formError.value = '';
-
   switch (step.value) {
-    case 'foto':
-      router.push('/app/inicio');
-      break;
-    case 'existe':
-      step.value = 'foto';
-      break;
+    case 'foto': router.push('/app/inicio'); break;
+    case 'existe': step.value = 'foto'; break;
     case 'seleccion':
-    case 'registro':
-      step.value = 'existe';
-      break;
-    case 'resultado':
-      step.value = modoNuevo.value ? 'registro' : 'seleccion';
-      break;
-    default:
-      break;
+    case 'registro': step.value = 'existe'; break;
+    case 'resultado': step.value = modoNuevo.value ? 'registro' : 'seleccion'; break;
+    default: break;
   }
 };
 
 const calcularExistente = async () => {
-  if (!bovinoSeleccionado.value) {
+  if (!bovinoSeleccionado.value) return;
+  modoNuevo.value = false;
+  step.value = 'procesando';
+  formError.value = '';
+
+  if (!isOnline.value) {
+    await enqueueEstimacion({
+      bovinoId: bovinoSeleccionado.value.id,
+      razaId: bovinoSeleccionado.value.breedId,
+      bovinoNombre: bovinoSeleccionado.value.name,
+      fotoDataUrl: photoDataUrl.value,
+    });
+    offlineQueued.value = true;
+    pesoGuardado.value = 0;
+    bovinoGuardadoId.value = bovinoSeleccionado.value.id;
+    step.value = 'exito';
     return;
   }
 
-  modoNuevo.value = false;
-  step.value = 'procesando';
+  try {
+    const foto = await compressImage(photoDataUrl.value);
+    const resultado = await pesajesRepo.estimar({
+      bovinoId: bovinoSeleccionado.value.id,
+      razaId: bovinoSeleccionado.value.breedId,
+      foto,
+      modoOffline: false,
+    });
 
-  const resultado = await estimarPesoBovinoExistente(bovinoSeleccionado.value);
-  pesoEstimado.value = resultado.weightKg;
-  confianza.value = resultado.confidence;
-  pesoCorregido.value = resultado.weightKg;
-  editandoPeso.value = false;
-  step.value = 'resultado';
+    if (resultado.status === 'pendiente') {
+      pendienteBackend.value = true;
+      pesoGuardado.value = 0;
+      bovinoGuardadoId.value = bovinoSeleccionado.value.id;
+      step.value = 'exito';
+      return;
+    }
+    pendienteBackend.value = false;
+    pesajeId.value = resultado.pesaje.id;
+    pesoEstimado.value = resultado.pesaje.weightKg;
+    confianza.value = resultado.pesaje.confianzaIa ?? 0;
+    pesoCorregido.value = resultado.pesaje.weightKg;
+    editandoPeso.value = false;
+    step.value = 'resultado';
+  } catch (error) {
+    formError.value = error instanceof Error ? error.message : 'No fue posible estimar el peso.';
+    step.value = 'seleccion';
+  }
 };
 
 const calcularNuevo = async () => {
   formError.value = '';
+  modoNuevo.value = true;
 
-  if (existeArete(nuevo.earTag)) {
-    formError.value = 'El número de arete ya está registrado. Verifica el identificador.';
+  if (!isOnline.value) {
+    formError.value = 'Se requiere conexión para registrar un bovino nuevo.';
     return;
   }
 
-  modoNuevo.value = true;
   step.value = 'procesando';
 
-  const resultado = await estimarPesoBovinoNuevo(nuevo.breed);
-  pesoEstimado.value = resultado.weightKg;
-  confianza.value = resultado.confidence;
-  pesoCorregido.value = resultado.weightKg;
-  editandoPeso.value = false;
-  step.value = 'resultado';
+  try {
+    const bovino = await bovinosRepo.create({
+      fincaId: nuevo.farmId,
+      razaId: nuevo.breedId,
+      earTag: nuevo.earTag.trim(),
+      name: nuevo.name.trim(),
+      sex: nuevo.sex,
+      birthDate: nuevo.birthDate,
+      notes: nuevo.notes.trim(),
+    });
+
+    const foto = await compressImage(photoDataUrl.value);
+    const resultado = await pesajesRepo.estimar({
+      bovinoId: bovino.id,
+      razaId: nuevo.breedId,
+      foto,
+      modoOffline: false,
+    });
+
+    if (resultado.status === 'pendiente') {
+      pendienteBackend.value = true;
+      pesoGuardado.value = 0;
+      bovinoGuardadoId.value = bovino.id;
+      step.value = 'exito';
+      return;
+    }
+    pendienteBackend.value = false;
+    pesajeId.value = resultado.pesaje.id;
+    pesoEstimado.value = resultado.pesaje.weightKg;
+    confianza.value = resultado.pesaje.confianzaIa ?? 0;
+    pesoCorregido.value = resultado.pesaje.weightKg;
+    bovinoGuardadoId.value = bovino.id;
+    editandoPeso.value = false;
+    step.value = 'resultado';
+  } catch (error) {
+    formError.value = error instanceof Error ? error.message : 'No fue posible registrar el bovino.';
+    step.value = 'registro';
+  }
 };
 
 const toggleEdicionPeso = () => {
   editandoPeso.value = !editandoPeso.value;
-
-  if (!editandoPeso.value) {
-    pesoCorregido.value = pesoEstimado.value;
-  }
+  if (!editandoPeso.value) pesoCorregido.value = pesoEstimado.value;
 };
 
 const cancelarResultado = () => {
@@ -463,9 +498,16 @@ const cancelarResultado = () => {
   step.value = modoNuevo.value ? 'registro' : 'seleccion';
 };
 
-const guardar = () => {
+const guardar = async () => {
   formError.value = '';
   offlineQueued.value = false;
+
+  if (pendienteBackend.value) {
+    // El backend procesa la foto después; no hay pesaje que corregir aún.
+    pesoGuardado.value = 0;
+    step.value = 'exito';
+    return;
+  }
 
   const pesoFinal = editandoPeso.value ? Math.round(pesoCorregido.value) : pesoEstimado.value;
 
@@ -475,43 +517,14 @@ const guardar = () => {
   }
 
   try {
-    let bovino: Bovino;
-
-    if (modoNuevo.value) {
-      bovino = registrarBovino({
-        name: nuevo.name,
-        earTag: nuevo.earTag,
-        farmId: nuevo.farmId,
-        breed: nuevo.breed,
-        sex: nuevo.sex,
-        status: nuevo.status,
-        birthDate: nuevo.birthDate,
-        notes: nuevo.notes,
-        photoUrl: photoUrl.value || FOTO_GENERICA,
-      });
-    } else if (bovinoSeleccionado.value) {
-      bovino = bovinoSeleccionado.value;
-    } else {
-      return;
+    if (editandoPeso.value && pesoFinal !== pesoEstimado.value && pesajeId.value) {
+      await pesajesRepo.corregir(pesajeId.value, pesoFinal, 'Corrección manual del ganadero');
     }
-
-    const fuente = editandoPeso.value && pesoFinal !== pesoEstimado.value ? 'Manual' : 'IA';
-    guardarPesaje(bovino, pesoFinal, fuente);
-
-    if (!isOnline.value) {
-      enqueueOfflineItem({
-        type: 'pesaje',
-        description: `${bovino.name} - ${pesoFinal} Kg`,
-      });
-      offlineQueued.value = true;
-    }
-
     pesoGuardado.value = pesoFinal;
-    bovinoGuardadoId.value = bovino.id;
     step.value = 'exito';
   } catch (error) {
     formError.value = error instanceof Error ? error.message : 'No fue posible guardar el pesaje.';
-    step.value = modoNuevo.value ? 'registro' : 'resultado';
+    step.value = 'resultado';
   }
 };
 </script>
@@ -531,7 +544,7 @@ const guardar = () => {
   max-width: 390px;
   min-height: 100%;
   margin: 0 auto;
-  padding: 22px 18px 104px;
+  padding: var(--bw-page-pad-top) var(--bw-page-pad-x) var(--bw-page-pad-bottom-tabs);
   box-sizing: border-box;
 }
 

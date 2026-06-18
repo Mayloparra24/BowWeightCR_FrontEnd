@@ -18,10 +18,6 @@
               <ion-icon :icon="notificationsOutline" />
               <span v-if="notificationCount">{{ notificationCount }}</span>
             </router-link>
-            <button v-else type="button" aria-label="Notificaciones" class="notification-button">
-              <ion-icon :icon="notificationsOutline" />
-              <span v-if="notificationCount">{{ notificationCount }}</span>
-            </button>
             <div v-if="!isAdmin" class="user-avatar">{{ userInitials }}</div>
             <router-link v-if="isAdmin" to="/app/configuracion" aria-label="Configuración">
               <ion-icon :icon="settingsOutline" />
@@ -56,24 +52,22 @@
             </article>
           </section>
 
-          <section class="alerts-section">
-            <h1>Alertas del sistema</h1>
-            <div class="admin-alert-list">
-              <p>Error al procesar fotografía en una estimación.</p>
-              <p>No se pudo sincronizar la información de un pesaje.</p>
-            </div>
-          </section>
-
           <section class="events-section">
             <div class="section-heading">
               <h2>Últimos eventos</h2>
               <router-link to="/app/bitacora">Ver Bitácora</router-link>
             </div>
-            <div class="event-list">
+            <div v-if="eventsError" class="event-list empty">
+              <p>{{ eventsError }}</p>
+            </div>
+            <div v-else-if="adminEvents.length" class="event-list">
               <article v-for="event in adminEvents" :key="event.id">
-                <span>{{ event.message }}</span>
-                <time>{{ event.date }}</time>
+                <span>{{ event.descripcion }}</span>
+                <time>{{ event.creadaEl }}</time>
               </article>
+            </div>
+            <div v-else class="event-list empty">
+              <p>No hay eventos recientes.</p>
             </div>
           </section>
         </template>
@@ -258,7 +252,7 @@
 </template>
 
 <script setup lang="ts">
-import { IonContent, IonIcon, IonPage } from '@ionic/vue';
+import { IonContent, IonIcon, IonPage, onIonViewWillEnter } from '@ionic/vue';
 import {
   cameraOutline,
   calendarOutline,
@@ -267,9 +261,12 @@ import {
   settingsOutline,
   speedometerOutline,
 } from 'ionicons/icons';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { currentUser } from '@/modules/auth/services/sessionService';
-import { bovinos, fincas, registrosPeso, usuariosDemo } from '@/shared/data/mockData';
+import { bitacoraRepo } from '@/shared/services/bitacoraRepo';
+import { bovinosRepo } from '@/shared/services/bovinosRepo';
+import { fincasRepo } from '@/shared/services/fincasRepo';
+import { usuariosRepo } from '@/shared/services/usuariosRepo';
 import { bovinoPhoto, onBovinoPhotoError } from '@/shared/utils/bovinoPhoto';
 import {
   isOnline,
@@ -277,6 +274,7 @@ import {
   pendingOfflineCount,
   pendingOfflineItems,
 } from '@/shared/services/offlineService';
+import type { BitacoraEvento, Bovino, Finca } from '@/shared/types/domain';
 
 const userName = computed(() => currentUser.value?.fullName ?? 'Usuario');
 const isAdmin = computed(() => currentUser.value?.role === 'admin');
@@ -287,19 +285,46 @@ const canManageReminders = computed(() => {
   return role === 'ganadero' || role === 'asistente';
 });
 
+const fincas = ref<Finca[]>([]);
+const bovinos = ref<Bovino[]>([]);
+const totalUsuarios = ref(0);
+const adminEvents = ref<BitacoraEvento[]>([]);
+const eventsError = ref('');
+const cargando = ref(true);
+
+const cargarDatos = async () => {
+  cargando.value = true;
+  eventsError.value = '';
+  try {
+    const [f, b] = await Promise.all([fincasRepo.list(), bovinosRepo.list()]);
+    fincas.value = f;
+    bovinos.value = b;
+    if (isAdmin.value) {
+      try {
+        const { meta } = await usuariosRepo.list(1, 1);
+        totalUsuarios.value = meta.total;
+      } catch {
+        totalUsuarios.value = 0;
+      }
+      try {
+        const { items } = await bitacoraRepo.list({ perPage: 5 });
+        adminEvents.value = items;
+      } catch {
+        adminEvents.value = [];
+        eventsError.value = 'No se pudieron cargar los eventos.';
+      }
+    }
+  } finally {
+    cargando.value = false;
+  }
+};
+
+onIonViewWillEnter(cargarDatos);
+
 const headerSubtitle = computed(() => {
-  if (isAdmin.value) {
-    return 'Panel de administrador';
-  }
-
-  if (isAssistant.value) {
-    return 'Captura de campo';
-  }
-
-  if (isVet.value) {
-    return `Bienvenido ${shortName.value}`;
-  }
-
+  if (isAdmin.value) return 'Panel de administrador';
+  if (isAssistant.value) return 'Captura de campo';
+  if (isVet.value) return `Bienvenido ${shortName.value}`;
   return 'Panel ganadero';
 });
 
@@ -319,23 +344,15 @@ const userInitials = computed(() => {
 });
 
 const adminStats = computed(() => ({
-  users: usuariosDemo.length,
-  fincas: fincas.length,
-  bovinos: bovinos.filter((bovino) => bovino.status === 'Activo').length,
-  estimates: registrosPeso.length,
+  users: totalUsuarios.value,
+  fincas: fincas.value.length,
+  bovinos: bovinos.value.filter((bovino) => bovino.status === 'Activo').length,
+  estimates: bovinos.value.filter((bovino) => bovino.lastWeightKg > 0).length,
 }));
-const adminEvents = [
-  { id: 'event-login', message: 'Inicio de sesión de Ivan Chavarria.', date: 'Hoy' },
-  { id: 'event-photo', message: 'Foto enviada para estimación de peso.', date: 'Hoy' },
-  { id: 'event-error', message: 'No se pudo sincronizar la información.', date: 'Ayer' },
-];
 
-const assignedFarmIds = computed(() => currentUser.value?.assignedFarmIds ?? []);
-const fincasAsignadas = computed(() => fincas.filter((finca) => assignedFarmIds.value.includes(finca.id)));
-const bovinosAsignados = computed(() => bovinos.filter((bovino) => assignedFarmIds.value.includes(bovino.farmId)));
-const bovinosRecientes = computed(() => bovinosAsignados.value.slice(0, 2));
+const bovinosRecientes = computed(() => bovinos.value.slice(0, 2));
 const reminders = computed(() => {
-  return bovinosAsignados.value
+  return bovinos.value
     .filter((bovino) => daysSinceLastWeight(bovino.lastWeightDate) >= 90 || bovino.lastWeightKg === 0)
     .slice(0, 3)
     .map((bovino) => {
@@ -343,55 +360,42 @@ const reminders = computed(() => {
       const message = bovino.lastWeightKg === 0
         ? 'Aún no tiene pesaje registrado.'
         : `Último pesaje hace ${days} días.`;
-
       return { bovino, message };
     });
 });
 const notificationCount = computed(() => reminders.value.length + pendingOfflineCount.value);
 
 const vetStats = computed(() => ({
-  fincas: fincasAsignadas.value.length,
-  bovinos: bovinosAsignados.value.length,
+  fincas: fincas.value.length,
+  bovinos: bovinos.value.length,
 }));
 
 const farmerStats = computed(() => ({
-  fincas: fincasAsignadas.value.length,
-  bovinos: bovinosAsignados.value.length,
+  fincas: fincas.value.length,
+  bovinos: bovinos.value.length,
 }));
 
 const averageWeight = computed(() => {
-  if (!bovinosAsignados.value.length) {
-    return 0;
-  }
-
-  const total = bovinosAsignados.value.reduce((sum, bovino) => sum + bovino.lastWeightKg, 0);
-  return Math.round(total / bovinosAsignados.value.length);
+  const conPeso = bovinos.value.filter((bovino) => bovino.lastWeightKg > 0);
+  if (!conPeso.length) return 0;
+  const total = conPeso.reduce((sum, bovino) => sum + bovino.lastWeightKg, 0);
+  return Math.round(total / conPeso.length);
 });
 
 const assignedFarmNames = computed(() => {
-  if (!fincasAsignadas.value.length) {
-    return 'Sin fincas asignadas';
-  }
-
-  return fincasAsignadas.value.map((finca) => finca.name).join(' - ');
+  if (!fincas.value.length) return 'Sin fincas asignadas';
+  return fincas.value.map((finca) => finca.name).join(' - ');
 });
 
 const farmName = (farmId: string) => {
-  return fincas.find((finca) => finca.id === farmId)?.name ?? 'Sin finca';
+  return fincas.value.find((finca) => finca.id === farmId)?.name ?? 'Sin finca';
 };
 
 function daysSinceLastWeight(value: string) {
-  if (!value) {
-    return 999;
-  }
-
+  if (!value) return 999;
   const [day, month, year] = value.split('/').map(Number);
   const date = new Date(year, month - 1, day);
-
-  if (Number.isNaN(date.getTime())) {
-    return 999;
-  }
-
+  if (Number.isNaN(date.getTime())) return 999;
   return Math.floor((Date.now() - date.getTime()) / 86_400_000);
 }
 </script>
@@ -404,7 +408,7 @@ function daysSinceLastWeight(value: string) {
 .home-shell {
   width: 100%;
   min-height: 100%;
-  padding: 28px 20px 104px;
+  padding: var(--bw-page-pad-top) var(--bw-page-pad-x) var(--bw-page-pad-bottom-tabs);
   box-sizing: border-box;
   background:
     linear-gradient(180deg, rgba(245, 248, 251, 0.98), rgba(232, 239, 247, 0.92)),

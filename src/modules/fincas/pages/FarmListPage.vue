@@ -32,7 +32,7 @@
             </div>
             <div>
               <h2>{{ farm.name }}</h2>
-              <p>{{ farm.location }} - {{ farm.cattleCount }} cabezas</p>
+              <p>{{ farm.location }}</p>
             </div>
             <div class="farm-actions">
               <router-link :to="`/app/bovinos?finca=${farm.id}`">Ver</router-link>
@@ -80,21 +80,37 @@
 </template>
 
 <script setup lang="ts">
-import { IonContent, IonIcon, IonPage } from '@ionic/vue';
+import { IonContent, IonIcon, IonPage, onIonViewWillEnter } from '@ionic/vue';
 import { addOutline, chevronBackOutline, createOutline, locationOutline, searchOutline, trashOutline } from 'ionicons/icons';
 import { computed, reactive, ref } from 'vue';
 import { currentUser } from '@/modules/auth/services/sessionService';
-import { fincas } from '@/shared/data/mockData';
+import { fincasRepo, type FincaInput } from '@/shared/services/fincasRepo';
 import type { Finca } from '@/shared/types/domain';
-import { actualizarFinca, crearFinca, eliminarFinca } from '@/shared/services/fincaService';
 
 const search = ref('');
-const isFarmer = computed(() => currentUser.value?.role === 'ganadero');
+const isFarmer = computed(() => currentUser.value?.role === 'ganadero' || currentUser.value?.role === 'asistente');
+
+const fincas = ref<Finca[]>([]);
+const cargando = ref(true);
+const cargandoAccion = ref(false);
 
 const modalAbierto = ref(false);
 const editandoId = ref('');
 const modalError = ref('');
 const form = reactive({ name: '', location: '' });
+
+const cargarFincas = async () => {
+  cargando.value = true;
+  try {
+    fincas.value = await fincasRepo.list();
+  } catch (error) {
+    modalError.value = error instanceof Error ? error.message : 'No fue posible cargar las fincas.';
+  } finally {
+    cargando.value = false;
+  }
+};
+
+onIonViewWillEnter(cargarFincas);
 
 const abrirCrear = () => {
   editandoId.value = '';
@@ -117,24 +133,30 @@ const cerrarModal = () => {
   modalError.value = '';
 };
 
-const guardar = () => {
+const guardar = async () => {
   modalError.value = '';
-
+  cargandoAccion.value = true;
   try {
+    const input: FincaInput = { name: form.name, location: form.location };
     if (editandoId.value) {
-      actualizarFinca(editandoId.value, { name: form.name, location: form.location });
+      await fincasRepo.update(editandoId.value, input);
     } else {
-      crearFinca({ name: form.name, location: form.location }, currentUser.value?.assignedFarmIds);
+      await fincasRepo.create(input);
     }
     modalAbierto.value = false;
+    await cargarFincas();
   } catch (error) {
     modalError.value = error instanceof Error ? error.message : 'No fue posible guardar la finca.';
+  } finally {
+    cargandoAccion.value = false;
   }
 };
 
-const quitarFinca = (farm: Finca) => {
+const quitarFinca = async (farm: Finca) => {
+  if (!confirm(`¿Eliminar la finca "${farm.name}"?`)) return;
   try {
-    eliminarFinca(farm.id, currentUser.value?.assignedFarmIds);
+    await fincasRepo.remove(farm.id);
+    await cargarFincas();
   } catch (error) {
     modalError.value = error instanceof Error ? error.message : 'No fue posible eliminar la finca.';
     editandoId.value = '';
@@ -145,33 +167,21 @@ const quitarFinca = (farm: Finca) => {
 const pageTitle = computed(() => (isFarmer.value ? 'Mis fincas' : 'Fincas asignadas'));
 
 const infoText = computed(() => {
-  if (isFarmer.value) {
-    return 'Aquí se muestran las fincas registradas para tu cuenta.';
-  }
-
+  if (isFarmer.value) return 'Aquí se muestran las fincas registradas para tu cuenta.';
   return 'Solo se muestran las fincas que el administrador te ha asignado.';
 });
 
 const emptyTitle = computed(() => (isFarmer.value ? 'No hay fincas registradas.' : 'No hay fincas asignadas.'));
 
 const emptyText = computed(() => {
-  if (isFarmer.value) {
-    return 'Cuando registres una finca, aparecerá en esta lista.';
-  }
-
+  if (isFarmer.value) return 'Cuando registres una finca, aparecerá en esta lista.';
   return 'Cuando el administrador asigne fincas, aparecerán en esta lista.';
 });
 
 const visibleFarms = computed(() => {
-  const assignedIds = currentUser.value?.assignedFarmIds ?? [];
   const normalizedSearch = search.value.trim().toLowerCase();
-
-  return fincas.filter((finca) => {
-    const isAssigned = assignedIds.includes(finca.id);
-    const matchesSearch = finca.name.toLowerCase().includes(normalizedSearch);
-
-    return isAssigned && matchesSearch;
-  });
+  if (!normalizedSearch) return fincas.value;
+  return fincas.value.filter((finca) => finca.name.toLowerCase().includes(normalizedSearch));
 });
 </script>
 
@@ -181,8 +191,7 @@ const visibleFarms = computed(() => {
 }
 
 .page-surface::part(scroll) {
-  display: flex;
-  justify-content: center;
+  display: block;
 }
 
 .farm-shell {
@@ -190,7 +199,7 @@ const visibleFarms = computed(() => {
   max-width: 390px;
   min-height: 100%;
   margin: 0 auto;
-  padding: 22px 18px 104px;
+  padding: var(--bw-page-pad-top) var(--bw-page-pad-x) var(--bw-page-pad-bottom-tabs);
   box-sizing: border-box;
 }
 
@@ -400,7 +409,7 @@ h2 {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  padding: 16px;
+  padding: 16px 16px max(16px, var(--bw-safe-bottom)) 16px;
   background: rgba(7, 24, 50, 0.45);
 }
 
@@ -409,7 +418,7 @@ h2 {
   max-width: 390px;
   display: grid;
   gap: 12px;
-  padding: 20px 18px 22px;
+  padding: 20px 18px calc(22px + var(--bw-safe-bottom));
   border-radius: 16px 16px 10px 10px;
   background: #f5f8fb;
   box-shadow: 0 -10px 30px rgba(7, 24, 50, 0.25);

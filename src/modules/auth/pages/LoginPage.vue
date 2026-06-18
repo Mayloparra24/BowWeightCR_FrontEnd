@@ -1,25 +1,27 @@
 <template>
   <ion-page>
-    <ion-content :fullscreen="true" class="login-page">
-      <main class="login-shell">
-        <section class="login-card" aria-labelledby="login-title">
-          <header class="brand-hero">
-            <div class="brand-block">
-              <div class="logo-badge" aria-hidden="true">
-                <img src="/bovweight-logo-clean.png" alt="" />
-              </div>
-
-              <div class="brand-copy">
-                <p>BovWeight <span>CR</span></p>
-                <small>Estimación de peso ganadero</small>
-              </div>
+  <ion-content :fullscreen="true" class="login-page">
+    <div class="login-bg" aria-hidden="true" />
+    <main class="login-shell">
+      <section class="login-card" aria-labelledby="login-title">
+        <header class="brand-hero">
+          <div class="brand-block">
+            <div class="logo-badge" aria-hidden="true">
+              <img src="/bovweight-logo-clean.png" alt="" />
             </div>
-          </header>
 
-          <section class="login-panel">
-            <h1 id="login-title" class="sr-only">Iniciar sesión en BovWeight CR</h1>
+            <div class="brand-copy">
+              <p>BovWeight <span>CR</span></p>
+              <small>Estimación inteligente de peso ganadero</small>
+            </div>
+          </div>
+        </header>
 
-            <form class="login-form" novalidate @submit.prevent="handleLogin">
+        <section class="login-panel">
+          <h1 id="login-title" class="sr-only">Iniciar sesión en BovWeight CR</h1>
+
+          <form class="login-form" novalidate @submit.prevent="handleLogin">
+
               <div class="field-group">
                 <label for="email">
                   <ion-icon :icon="personCircleOutline" />
@@ -63,19 +65,17 @@
                 </div>
               </div>
 
-              <button class="forgot-button" type="button">¿Olvidaste tu contraseña?</button>
-
               <p v-if="errorMessage" class="form-error" role="alert">{{ errorMessage }}</p>
 
-              <ion-button class="login-button" expand="block" type="submit" :disabled="isSubmitting">
-                <ion-spinner v-if="isSubmitting" name="crescent" />
-                <span v-else>
-                  Iniciar sesión
-                </span>
-              </ion-button>
+  <ion-button class="login-button" expand="block" type="submit" :disabled="isSubmitting">
+    <ion-spinner v-if="isSubmitting" name="crescent" />
+    <ion-icon v-else :icon="logInOutline" />
+    <span>{{ isSubmitting ? 'Iniciando sesión...' : 'Iniciar sesión' }}</span>
+  </ion-button>
+
             </form>
 
-            <p class="support-text">¿No tienes una cuenta? <a href="#">Contactar a soporte</a></p>
+            <p class="support-text">¿Problemas para ingresar? Contactá al administrador.</p>
           </section>
         </section>
       </main>
@@ -97,6 +97,7 @@ import {
   eyeOutline,
   lockClosed,
   lockClosedOutline,
+  logInOutline,
   mailOutline,
   personCircleOutline,
 } from 'ionicons/icons';
@@ -115,7 +116,7 @@ const isSubmitting = ref(false);
 const validateForm = () => {
   if (!email.value.trim()) {
     errorField.value = 'email';
-    return 'Ingrese su correo o usuario.';
+    return 'Ingrese su correo.';
   }
 
   if (!email.value.includes('@')) {
@@ -123,9 +124,9 @@ const validateForm = () => {
     return 'Ingrese un correo válido.';
   }
 
-  if (password.value.length < 6) {
+  if (!password.value) {
     errorField.value = 'password';
-    return 'La contraseña debe tener al menos 6 caracteres.';
+    return 'Ingrese su contraseña.';
   }
 
   errorField.value = '';
@@ -144,7 +145,11 @@ const handleLogin = async () => {
 
   try {
     const user = await login(email.value, password.value);
-    await router.replace(getDefaultRouteForRole(user.role));
+    if (user.mustChangePassword) {
+      await router.replace('/cambiar-contrasena');
+    } else {
+      await router.replace(getDefaultRouteForRole(user.role));
+    }
   } catch (error) {
     errorField.value = 'password';
     errorMessage.value = error instanceof Error ? error.message : 'No se pudo iniciar sesión.';
@@ -156,69 +161,98 @@ const handleLogin = async () => {
 
 <style scoped>
 .login-page {
-  --background: linear-gradient(180deg, #062b66 0%, #071832 100%);
+  --background: transparent;
   position: relative;
   min-height: 100vh;
+  overflow: hidden;
 }
 
-.login-page::before {
+.login-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background:
+    linear-gradient(160deg, rgba(5, 43, 102, 0.92) 0%, rgba(7, 24, 50, 0.96) 60%, rgba(7, 24, 50, 0.98) 100%),
+    url('/vaca.png') center / cover no-repeat;
+  filter: saturate(90%) contrast(105%);
+}
+
+.login-bg::after {
   content: '';
   position: absolute;
   inset: 0;
-  background-image:
-    radial-gradient(circle at 14% 8%, rgba(139, 183, 229, 0.18), transparent 30%),
-    linear-gradient(180deg, rgba(5, 43, 102, 0.24), rgba(7, 24, 50, 0.42));
-  pointer-events: none;
-  z-index: 0;
+  background:
+    radial-gradient(circle at 20% 10%, rgba(139, 183, 229, 0.22), transparent 35%),
+    radial-gradient(circle at 80% 90%, rgba(47, 117, 181, 0.16), transparent 40%);
 }
 
 .login-shell {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 48px 20px;
+  padding:
+    max(48px, var(--bw-safe-top))
+    20px
+    max(48px, var(--bw-safe-bottom));
   position: relative;
   z-index: 1;
+  box-sizing: border-box;
 }
 
 .login-card {
   width: 100%;
   max-width: 460px;
-  min-height: auto;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border-radius: 20px;
-  background: #ffffff;
-  border: 1px solid rgba(139, 183, 229, 0.36);
-  box-shadow: 0 30px 80px rgba(2, 14, 32, 0.42);
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  box-shadow:
+    0 32px 80px rgba(2, 14, 32, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  animation: cardEnter 540ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes cardEnter {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .brand-hero {
   position: relative;
   display: flex;
   justify-content: center;
-  padding: 26px 28px 20px;
+  padding: 34px 28px 26px;
   overflow: hidden;
   background:
-    radial-gradient(circle at 50% 0%, rgba(139, 183, 229, 0.26), transparent 42%),
-    linear-gradient(180deg, #062b66 0%, #071832 100%);
-  border-bottom: 1px solid rgba(139, 183, 229, 0.2);
+    radial-gradient(circle at 50% 0%, rgba(139, 183, 229, 0.28), transparent 45%),
+    linear-gradient(180deg, var(--bw-primary) 0%, var(--bw-navy) 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
 }
 
 .brand-hero::after {
   content: '';
   position: absolute;
-  inset: auto 34px 0;
+  inset: auto 40px 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(139, 183, 229, 0.48), transparent);
+  background: linear-gradient(90deg, transparent, rgba(139, 183, 229, 0.55), transparent);
 }
 
 .brand-block {
   display: grid;
   justify-items: center;
-  gap: 9px;
+  gap: 12px;
   text-align: center;
   position: relative;
   z-index: 1;
@@ -226,20 +260,16 @@ const handleLogin = async () => {
 
 .logo-badge {
   position: relative;
-  width: 118px;
-  height: 98px;
+  width: 120px;
+  height: 100px;
   display: grid;
   place-items: center;
-  border-radius: 30px;
+  border-radius: 32px;
   overflow: hidden;
-  padding: 7px 10px;
-  background: #fffaf0;
+  padding: 8px 12px;
+  background: var(--bw-white);
   border: 1px solid rgba(8, 37, 74, 0.08);
-  box-shadow: 0 16px 34px rgba(8, 37, 74, 0.12);
-}
-
-.logo-badge::before {
-  display: none;
+  box-shadow: 0 18px 40px rgba(8, 37, 74, 0.18);
 }
 
 .logo-badge img {
@@ -249,31 +279,28 @@ const handleLogin = async () => {
   height: 100%;
   object-fit: contain;
   display: block;
-  background: transparent;
-  mix-blend-mode: multiply;
-  -webkit-mask-image: none;
 }
 
 .brand-copy p {
   margin: 0;
-  color: #ffffff;
-  font-size: 28px;
+  color: var(--bw-white);
+  font-size: 30px;
   font-weight: 900;
-  letter-spacing: 0;
+  letter-spacing: -0.5px;
   line-height: 1;
 }
 
 .brand-copy p span {
-  color: #2f75b5;
+  color: var(--bw-sky);
 }
 
 .brand-copy small {
   display: block;
-  margin-top: 4px;
-  color: #cfe0f5;
+  margin-top: 5px;
+  color: var(--bw-sky-soft);
   font-size: 13px;
   font-weight: 700;
-  line-height: 1.2;
+  line-height: 1.25;
 }
 
 .login-panel {
@@ -282,35 +309,7 @@ const handleLogin = async () => {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: #ffffff;
   padding: 34px 0 0;
-}
-
-.login-panel::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: url('/vaca.png') center 35% / cover no-repeat;
-  filter: saturate(92%) contrast(108%) sepia(4%);
-  opacity: 0.48;
-  pointer-events: none;
-  z-index: 0;
-}
-
-.login-panel::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.62) 0%, rgba(255, 255, 255, 0.56) 48%, rgba(255, 255, 255, 0.72) 100%),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.22));
-  pointer-events: none;
-  z-index: 0;
-}
-
-.login-panel > * {
-  position: relative;
-  z-index: 1;
 }
 
 .sr-only {
@@ -328,11 +327,11 @@ const handleLogin = async () => {
 .login-form {
   display: flex;
   flex-direction: column;
-  padding: 0 30px;
+  padding: 0 32px;
 }
 
 .field-group {
-  margin-bottom: 13px;
+  margin-bottom: 16px;
 }
 
 .field-group label {
@@ -340,37 +339,39 @@ const handleLogin = async () => {
   align-items: center;
   gap: 8px;
   margin-bottom: 8px;
-  color: #071832;
+  color: var(--bw-text);
   font-size: 12px;
   font-weight: 800;
+  letter-spacing: 0.2px;
 }
 
 .field-group label ion-icon {
-  color: #052b66;
+  color: var(--bw-primary);
   font-size: 17px;
 }
 
 .input-shell {
   width: 100%;
-  min-height: 47px;
+  min-height: 50px;
   display: flex;
   align-items: center;
   overflow: hidden;
   box-sizing: border-box;
-  border: 1px solid #a8acb8;
-  border-radius: 12px;
-  background: #ffffff;
-  box-shadow: 0 8px 20px rgba(7, 24, 50, 0.06);
-  transition: border-color 140ms ease, box-shadow 140ms ease;
+  border: 1px solid rgba(7, 24, 50, 0.18);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 8px 22px rgba(7, 24, 50, 0.06);
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
 }
 
 .input-shell:focus-within {
-  border-color: #052b66;
+  border-color: var(--bw-primary);
+  background: var(--bw-white);
   box-shadow: 0 0 0 3px rgba(5, 43, 102, 0.12);
 }
 
 .input-shell.invalid {
-  border-color: #d92d20;
+  border-color: var(--bw-error);
   box-shadow: 0 0 0 3px rgba(217, 45, 32, 0.12);
 }
 
@@ -378,22 +379,22 @@ const handleLogin = async () => {
   width: 100%;
   flex: 1;
   --background: transparent;
-  --color: #071832;
-  --placeholder-color: #566071;
+  --color: var(--bw-text);
+  --placeholder-color: var(--bw-text-secondary);
   --placeholder-opacity: 1;
   --padding-bottom: 0;
   --padding-end: 12px;
   --padding-start: 8px;
   --padding-top: 0;
-  min-height: 45px;
-  font-size: 13px;
+  min-height: 48px;
+  font-size: 14px;
 }
 
 .field-icon {
   flex: 0 0 auto;
-  margin-left: 13px;
-  color: #6f7a8a;
-  font-size: 19px;
+  margin-left: 14px;
+  color: var(--bw-icon-muted);
+  font-size: 20px;
 }
 
 .password-shell ion-input {
@@ -401,68 +402,71 @@ const handleLogin = async () => {
 }
 
 .password-toggle {
-  width: 42px;
-  height: 45px;
+  width: 44px;
+  height: 48px;
   display: grid;
   place-items: center;
   flex: 0 0 auto;
   border: 0;
   background: transparent;
-  color: #071832;
-  font-size: 19px;
+  color: var(--bw-text);
+  font-size: 20px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 120ms ease;
 }
 
-.forgot-button {
-  align-self: flex-end;
-  display: block;
-  margin: -3px 0 16px auto;
-  border: 0;
-  background: transparent;
-  color: #071832;
-  font-size: 12px;
-  font-weight: 800;
-  line-height: 1.2;
+.password-toggle:focus-visible {
+  outline: 2px solid var(--bw-primary);
+  outline-offset: -2px;
+}
+
+.password-toggle:active {
+  background: rgba(5, 43, 102, 0.08);
 }
 
 .login-button {
-  --background: #052b66;
-  --background-activated: #071832;
-  --background-focused: #071832;
-  --background-hover: #071832;
-  --border-radius: 10px;
-  --box-shadow: 0 16px 30px rgba(5, 43, 102, 0.18);
-  min-height: 49px;
+  --background: var(--bw-primary);
+  --background-activated: var(--bw-navy);
+  --background-focused: var(--bw-navy);
+  --background-hover: var(--bw-navy);
+  --border-radius: 14px;
+  --box-shadow: 0 18px 34px rgba(5, 43, 102, 0.22);
+  --color: var(--bw-white);
+  min-height: 52px;
   margin-top: 4px;
   font-weight: 900;
+  font-size: 15px;
   text-transform: none;
+  letter-spacing: 0.2px;
 }
 
-.login-button span {
-  display: inline-flex;
-  align-items: center;
+.login-button::part(native) {
   gap: 10px;
 }
 
-.login-button ion-icon {
-  font-size: 18px;
+.login-button ion-spinner {
+  color: var(--bw-white);
 }
 
 .form-error {
-  margin: -9px 0 12px;
-  color: #b42318;
+  margin: -10px 0 14px;
+  color: var(--bw-error-text);
   font-size: 12px;
-  line-height: 1.35;
+  font-weight: 700;
+  line-height: 1.4;
 }
 
 .support-text {
-  margin: 24px 30px 28px;
+  margin: 26px 32px 32px;
   text-align: center;
-  color: #566071;
+  color: var(--bw-text-secondary);
   font-size: 12px;
+  font-weight: 600;
 }
 
 .support-text a {
-  color: #2f75b5;
+  color: var(--bw-accent);
   font-weight: 800;
   text-decoration: none;
 }
@@ -470,34 +474,37 @@ const handleLogin = async () => {
 @media (max-width: 430px) {
   .login-shell {
     align-items: stretch;
-    min-height: auto;
-    padding: 10px 10px 14px;
+    padding:
+      max(18px, var(--bw-safe-top))
+      14px
+      max(18px, var(--bw-safe-bottom));
   }
 
   .login-card {
     max-width: none;
-    min-height: auto;
-    border-radius: 22px;
-    box-shadow: 0 24px 58px rgba(3, 14, 28, 0.26);
+    border-radius: 24px;
+    box-shadow:
+      0 24px 60px rgba(2, 14, 32, 0.38),
+      inset 0 1px 0 rgba(255, 255, 255, 0.6);
   }
 
   .brand-hero {
-    padding: 16px 18px 12px;
+    padding: 22px 22px 18px;
   }
 
   .brand-block {
-    gap: 7px;
+    gap: 9px;
   }
 
   .logo-badge {
-    width: 86px;
-    height: 72px;
-    border-radius: 22px;
-    padding: 5px 8px;
+    width: 92px;
+    height: 76px;
+    border-radius: 24px;
+    padding: 6px 10px;
   }
 
   .brand-copy p {
-    font-size: 22px;
+    font-size: 24px;
   }
 
   .brand-copy small {
@@ -506,12 +513,7 @@ const handleLogin = async () => {
   }
 
   .login-panel {
-    padding-top: 18px;
-  }
-
-  .login-panel::before {
-    background-position: center 28%;
-    opacity: 0.42;
+    padding-top: 22px;
   }
 
   .login-form {
@@ -519,66 +521,95 @@ const handleLogin = async () => {
   }
 
   .field-group {
-    margin-bottom: 10px;
+    margin-bottom: 12px;
   }
 
   .field-group label {
-    margin-bottom: 6px;
     font-size: 11px;
   }
 
   .input-shell {
-    min-height: 42px;
-    border-radius: 10px;
+    min-height: 44px;
+    border-radius: 12px;
   }
 
   .login-form ion-input {
-    min-height: 40px;
-    font-size: 12px;
+    min-height: 42px;
+    font-size: 13px;
   }
 
   .field-icon {
     margin-left: 12px;
-    font-size: 17px;
+    font-size: 18px;
   }
 
   .password-toggle {
-    width: 38px;
-    height: 40px;
-  }
-
-  .forgot-button {
-    margin: -2px 0 12px auto;
-    font-size: 11px;
+    width: 40px;
+    height: 42px;
   }
 
   .login-button {
-    min-height: 43px;
+    min-height: 46px;
+    font-size: 14px;
   }
 
   .support-text {
-    margin: 18px 24px 20px;
+    margin: 20px 24px 24px;
     font-size: 11px;
   }
 }
 
 @media (max-height: 760px) {
   .brand-hero {
-    padding-top: 14px;
-    padding-bottom: 10px;
+    padding-top: 18px;
+    padding-bottom: 14px;
   }
 
   .logo-badge {
-    width: 82px;
-    height: 68px;
+    width: 84px;
+    height: 70px;
   }
 
   .brand-copy p {
-    font-size: 21px;
+    font-size: 22px;
   }
 
   .login-panel {
-    padding-top: 16px;
+    padding-top: 18px;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .login-card {
+    background: rgba(11, 24, 44, 0.82);
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow:
+      0 32px 80px rgba(0, 0, 0, 0.55),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+
+  .brand-hero {
+    border-bottom-color: rgba(255, 255, 255, 0.08);
+  }
+
+  .input-shell {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.12);
+  }
+
+  .input-shell:focus-within {
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  .login-form ion-input {
+    --color: var(--bw-white);
+    --placeholder-color: var(--bw-sky);
+  }
+
+  .field-group label,
+  .forgot-button,
+  .support-text {
+    color: var(--bw-sky-soft);
   }
 }
 </style>

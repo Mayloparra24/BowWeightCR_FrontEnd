@@ -64,40 +64,40 @@
 </template>
 
 <script setup lang="ts">
-import { IonContent, IonIcon, IonPage } from '@ionic/vue';
+import { IonContent, IonIcon, IonPage, onIonViewWillEnter } from '@ionic/vue';
 import { chevronBackOutline, personAddOutline, searchOutline } from 'ionicons/icons';
 import { computed, ref } from 'vue';
-import { usuariosAdmin } from '@/modules/admin/data/users';
-import type { Rol } from '@/shared/types/domain';
+import { usuariosRepo } from '@/shared/services/usuariosRepo';
+import type { Rol, Usuario } from '@/shared/types/domain';
 
-const users = usuariosAdmin;
+const users = ref<Usuario[]>([]);
 const search = ref('');
 const selectedFilter = ref('Todos');
 const filters = ['Todos', 'Ganaderos', 'Asistentes', 'Veterinarios', 'Administradores', 'Inactivos'];
 
-const activeCount = computed(() => users.filter((user) => user.status === 'activo').length);
-const inactiveCount = computed(() => users.filter((user) => user.status === 'inactivo').length);
+onIonViewWillEnter(async () => {
+  try {
+    const { items } = await usuariosRepo.list(100);
+    users.value = items;
+  } catch {
+    users.value = [];
+  }
+});
+
+const activeCount = computed(() => users.value.filter((user) => user.status === 'activo').length);
+const inactiveCount = computed(() => users.value.filter((user) => user.status === 'inactivo').length);
 
 const roleLabel = (role: Rol) => {
-  if (role === 'admin') {
-    return 'Admin';
-  }
-
-  if (role === 'asistente') {
-    return 'Asistente';
-  }
-
-  if (role === 'veterinario') {
-    return 'Veterinario';
-  }
-
+  if (role === 'admin') return 'Admin';
+  if (role === 'asistente') return 'Asistente';
+  if (role === 'veterinario') return 'Veterinario';
   return 'Ganadero';
 };
 
 const visibleUsers = computed(() => {
   const normalizedSearch = search.value.trim().toLowerCase();
 
-  return users.filter((user) => {
+  return users.value.filter((user) => {
     const matchesSearch =
       user.fullName.toLowerCase().includes(normalizedSearch) ||
       user.email.toLowerCase().includes(normalizedSearch);
@@ -124,7 +124,7 @@ const visibleUsers = computed(() => {
   max-width: 390px;
   min-height: 100%;
   margin: 0 auto;
-  padding: 22px 18px 28px;
+  padding: var(--bw-page-pad-top) var(--bw-page-pad-x) var(--bw-page-pad-bottom-tabs);
   box-sizing: border-box;
 }
 
