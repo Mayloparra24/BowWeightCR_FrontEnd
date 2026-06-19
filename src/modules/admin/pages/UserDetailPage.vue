@@ -62,6 +62,7 @@
                   :disabled="!nuevaPassword || guardandoPassword"
                   @click="copiarPassword"
                 >
+                  <ion-icon :icon="copyOutline" />
                   {{ passwordCopiada ? 'Copiada' : 'Copiar' }}
                 </button>
               </div>
@@ -71,25 +72,61 @@
           </article>
         </section>
 
+        <section v-if="user" class="delete-section">
+          <h3>Zona peligrosa</h3>
+          <button
+            type="button"
+            class="delete-action"
+            :disabled="esUsuarioActual || eliminando"
+            @click="pedirEliminar"
+          >
+            <ion-icon :icon="trashOutline" />
+            {{ eliminando ? 'Eliminando...' : 'Eliminar usuario' }}
+          </button>
+          <p v-if="esUsuarioActual" class="delete-hint">No podés eliminar tu propio usuario.</p>
+          <p v-if="eliminarSuccess" class="delete-success">{{ eliminarSuccess }}</p>
+          <p v-if="eliminarError" class="delete-error">{{ eliminarError }}</p>
+        </section>
+
         <section v-else class="empty-state">
           <strong>Usuario no encontrado.</strong>
           <span>Selecciona un usuario registrado para ver su detalle.</span>
         </section>
       </section>
+
+      <div v-if="mostrarConfirmarEliminar" class="modal-backdrop confirm-backdrop" @click.self="cerrarEliminar">
+        <section class="confirm-card" role="dialog" aria-modal="true" aria-labelledby="delete-user-title">
+          <h2 id="delete-user-title">Eliminar usuario</h2>
+          <p>
+            ¿Estás seguro de que deseás eliminar a <strong>{{ user?.fullName }}</strong>? Esta acción no se puede deshacer.
+          </p>
+          <p v-if="eliminarError" class="modal-error">{{ eliminarError }}</p>
+
+          <div class="modal-actions">
+            <button type="button" class="modal-cancel" @click="cerrarEliminar">Cancelar</button>
+            <button type="button" class="modal-save danger-save" :disabled="eliminando" @click="confirmarEliminar">
+              {{ eliminando ? 'Eliminando...' : 'Eliminar' }}
+            </button>
+          </div>
+        </section>
+      </div>
     </ion-content>
   </ion-page>
 </template>
 
 <script setup lang="ts">
 import { IonContent, IonIcon, IonPage, onIonViewWillEnter } from '@ionic/vue';
-import { chevronBackOutline } from 'ionicons/icons';
+import { Clipboard } from '@capacitor/clipboard';
+import { chevronBackOutline, copyOutline, trashOutline } from 'ionicons/icons';
 import { computed, ref } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
+import { currentUser } from '@/modules/auth/services/sessionService';
 import { usuariosRepo } from '@/shared/services/usuariosRepo';
 import { formatFecha } from '@/shared/api/mappers';
 import type { Rol, Usuario } from '@/shared/types/domain';
 
 const route = useRoute();
+const router = useRouter();
 const user = ref<Usuario | null>(null);
 const guardando = ref(false);
 const errorEstado = ref('');
@@ -98,6 +135,13 @@ const guardandoPassword = ref(false);
 const passwordError = ref('');
 const passwordSuccess = ref('');
 const passwordCopiada = ref(false);
+
+const eliminando = ref(false);
+const mostrarConfirmarEliminar = ref(false);
+const eliminarError = ref('');
+const eliminarSuccess = ref('');
+
+const esUsuarioActual = computed(() => user.value?.id === currentUser.value?.id);
 
 const cargar = async () => {
   try {
@@ -176,7 +220,7 @@ const generarYGuardarPassword = async () => {
 const copiarPassword = async () => {
   if (!nuevaPassword.value) return;
   try {
-    await navigator.clipboard?.writeText(nuevaPassword.value);
+    await Clipboard.write({ string: nuevaPassword.value });
     passwordCopiada.value = true;
     passwordSuccess.value = 'Clave copiada al portapapeles.';
     window.setTimeout(() => {
@@ -184,6 +228,42 @@ const copiarPassword = async () => {
     }, 1800);
   } catch {
     passwordError.value = 'No se pudo copiar la clave. Copiala manualmente.';
+  }
+};
+
+const pedirEliminar = () => {
+  eliminarError.value = '';
+  eliminarSuccess.value = '';
+  mostrarConfirmarEliminar.value = true;
+};
+
+const cerrarEliminar = () => {
+  if (eliminando.value) return;
+  mostrarConfirmarEliminar.value = false;
+  eliminarError.value = '';
+};
+
+const confirmarEliminar = async () => {
+  if (!user.value || esUsuarioActual.value) return;
+  eliminando.value = true;
+  eliminarError.value = '';
+  eliminarSuccess.value = '';
+  try {
+    await usuariosRepo.remove(user.value.id);
+    eliminarSuccess.value = 'Usuario eliminado correctamente.';
+    mostrarConfirmarEliminar.value = false;
+    window.setTimeout(() => {
+      router.push('/app/usuarios');
+    }, 600);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'No fue posible eliminar el usuario.';
+    if (message.toLowerCase().includes('propio')) {
+      eliminarError.value = 'No podés eliminar tu propio usuario.';
+    } else {
+      eliminarError.value = message;
+    }
+  } finally {
+    eliminando.value = false;
   }
 };
 </script>
@@ -413,5 +493,145 @@ h3 {
   max-width: 230px;
   font-size: 12px;
   line-height: 1.4;
+}
+
+.delete-section {
+  margin-top: 32px;
+  padding-top: 22px;
+  border-top: 1px solid #6e83a6;
+}
+
+.delete-section h3 {
+  margin: 0 0 14px;
+  color: #b42318;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.delete-action {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  border-radius: 8px;
+  background: #b42318;
+  color: #ffffff;
+  padding: 0 14px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.delete-action:disabled {
+  opacity: 0.5;
+}
+
+.delete-hint,
+.delete-error,
+.delete-success {
+  margin: 8px 0 0;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.delete-hint {
+  color: #566071;
+}
+
+.delete-error {
+  color: #b42318;
+}
+
+.delete-success {
+  color: #052b66;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(7, 24, 50, 0.45);
+}
+
+.confirm-card {
+  width: 100%;
+  max-width: 350px;
+  display: grid;
+  gap: 14px;
+  padding: 22px 20px;
+  border-radius: 14px;
+  background: #f5f8fb;
+  color: #08254a;
+  box-shadow: 0 18px 40px rgba(7, 24, 50, 0.28);
+}
+
+.confirm-card h2 {
+  margin: 0;
+  color: #08254a;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.confirm-card p {
+  margin: 0;
+  color: #566071;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.confirm-card strong {
+  color: #08254a;
+  font-weight: 900;
+}
+
+.modal-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.modal-cancel,
+.modal-save {
+  min-height: 46px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 900;
+  border: 0;
+  cursor: pointer;
+}
+
+.modal-cancel {
+  border: 1px solid rgba(8, 37, 74, 0.16);
+  background: #ffffff;
+  color: #08254a;
+}
+
+.modal-save {
+  background: #052b66;
+  color: #ffffff;
+}
+
+.modal-save.danger-save {
+  background: #b42318;
+}
+
+.modal-save:disabled,
+.modal-cancel:disabled {
+  opacity: 0.65;
+}
+
+.modal-error {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(217, 45, 32, 0.1);
+  color: #b42318;
+  font-size: 11px;
+  font-weight: 800;
 }
 </style>

@@ -27,30 +27,12 @@
         </header>
 
         <template v-if="isAdmin">
-          <section class="metric-grid" aria-label="Resumen administrativo">
+          <section class="metric-grid admin-grid" aria-label="Resumen administrativo">
             <router-link class="metric-card users" to="/app/usuarios">
               <span>Usuarios</span>
               <strong>{{ adminStats.users }}</strong>
               <small>Registrados</small>
             </router-link>
-
-            <router-link class="metric-card farms" to="/app/fincas">
-              <span>Fincas</span>
-              <strong>{{ adminStats.fincas }}</strong>
-              <small>En sistema</small>
-            </router-link>
-
-            <router-link class="metric-card cattle" to="/app/bovinos">
-              <span>Bovinos</span>
-              <strong>{{ adminStats.bovinos }}</strong>
-              <small>Activos</small>
-            </router-link>
-
-            <article class="metric-card estimates">
-              <span>Estimaciones</span>
-              <strong>{{ adminStats.estimates }}</strong>
-              <small>Registradas</small>
-            </article>
           </section>
 
           <section class="events-section">
@@ -74,7 +56,7 @@
         </template>
 
         <section v-else-if="isVet" class="vet-home">
-          <p class="notice">Solo ves bovinos de las fincas que te han asignado.</p>
+          <p class="notice">Solo ves bovinos de las fincas que un ganadero o asistente te ha asignado.</p>
 
           <section class="vet-metrics" aria-label="Resumen veterinario">
             <router-link class="vet-card primary" to="/app/fincas">
@@ -307,11 +289,13 @@ const cargarDatos = async () => {
   cargando.value = true;
   eventsError.value = '';
   try {
-    const [f, b] = await Promise.all([fincasRepo.list(), bovinosRepo.list()]);
-    fincas.value = f;
-    bovinos.value = b;
-    const vistos = await listarRecordatoriosVistos();
-    viewedReminderStates.value = vistos;
+    if (!isAdmin.value) {
+      const [f, b] = await Promise.all([fincasRepo.list(), bovinosRepo.list()]);
+      fincas.value = f;
+      bovinos.value = b;
+      const vistos = await listarRecordatoriosVistos();
+      viewedReminderStates.value = vistos;
+    }
     if (isAdmin.value) {
       try {
         const { meta } = await usuariosRepo.list(1, 1);
@@ -532,6 +516,10 @@ const reminderStateKey = (bovino: Bovino) => {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
   margin-top: 24px;
+}
+
+.metric-grid.admin-grid {
+  grid-template-columns: 1fr;
 }
 
 .metric-card {

@@ -84,7 +84,7 @@ const exportarInventario = () => {
 <style scoped>
 .page-surface {
   --background: #f5f8fb;
-  --padding-bottom: calc(var(--bw-page-pad-bottom-tabs) + 120px);
+  --padding-bottom: var(--bw-page-pad-bottom-tabs);
 }
 
 .page-surface::part(scroll) {
@@ -182,7 +182,6 @@ h1 {
   display: grid;
   gap: 10px;
   margin-top: 18px;
-  padding-bottom: calc(var(--bw-page-pad-bottom-tabs) + 144px);
 }
 
 .empty-state {

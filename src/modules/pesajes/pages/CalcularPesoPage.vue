@@ -42,11 +42,24 @@
             capture="environment"
             @change="onPhotoSelected"
           />
+          <input
+            ref="galleryInput"
+            class="file-input"
+            type="file"
+            accept="image/*"
+            @change="onPhotoSelected"
+          />
 
-          <button class="primary-button" type="button" @click="openCamera">
-            <ion-icon :icon="cameraOutline" />
-            {{ photoUrl ? 'Tomar otra foto' : 'Tomar foto' }}
-          </button>
+          <div class="photo-actions">
+            <button class="primary-button" type="button" @click="openCamera">
+              <ion-icon :icon="cameraOutline" />
+              {{ photoUrl ? 'Tomar otra foto' : 'Tomar foto' }}
+            </button>
+            <button class="secondary-button" type="button" @click="openGallery">
+              <ion-icon :icon="imagesOutline" />
+              {{ photoUrl ? 'Cambiar imagen' : 'Subir de galería' }}
+            </button>
+          </div>
 
           <p class="notice">
             El peso calculado es una estimación de apoyo y no reemplaza la báscula
@@ -244,7 +257,7 @@
 
 <script setup lang="ts">
 import { IonContent, IonIcon, IonPage, IonSpinner, onIonViewWillEnter, onIonViewWillLeave } from '@ionic/vue';
-import { cameraOutline, checkmarkOutline, chevronBackOutline } from 'ionicons/icons';
+import { cameraOutline, checkmarkOutline, chevronBackOutline, imagesOutline } from 'ionicons/icons';
 import { computed, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { bovinosRepo } from '@/shared/services/bovinosRepo';
@@ -264,6 +277,7 @@ const router = useRouter();
 
 const step = ref<FlowStep>('foto');
 const fileInput = ref<HTMLInputElement | null>(null);
+const galleryInput = ref<HTMLInputElement | null>(null);
 const photoUrl = ref('');
 const photoDataUrl = ref('');
 
@@ -355,6 +369,13 @@ const openCamera = () => {
   if (fileInput.value) {
     fileInput.value.value = '';
     fileInput.value.click();
+  }
+};
+
+const openGallery = () => {
+  if (galleryInput.value) {
+    galleryInput.value.value = '';
+    galleryInput.value.click();
   }
 };
 
@@ -550,8 +571,7 @@ const guardar = async () => {
 }
 
 .page-surface::part(scroll) {
-  display: flex;
-  justify-content: center;
+  display: block;
 }
 
 .flow-shell {
@@ -658,6 +678,11 @@ const guardar = async () => {
 
 .file-input {
   display: none;
+}
+
+.photo-actions {
+  display: grid;
+  gap: 12px;
 }
 
 .primary-button,

@@ -190,7 +190,7 @@ const reminderStateKey = (bovino: Bovino) => {
 <style scoped>
 .page-surface {
   --background: var(--bw-surface, #f5f8fb);
-  --padding-bottom: calc(var(--bw-page-pad-bottom-tabs) + 120px);
+  --padding-bottom: var(--bw-page-pad-bottom-tabs);
 }
 
 .page-surface::part(scroll) {
@@ -298,7 +298,7 @@ const reminderStateKey = (bovino: Bovino) => {
 .reminder-cards {
   list-style: none;
   margin: 0;
-  padding: 0 0 calc(var(--bw-page-pad-bottom-tabs) + 144px);
+  padding: 0;
   display: grid;
   gap: 14px;
 }

@@ -336,8 +336,7 @@ const compartirReporte = async () => {
 }
 
 .page-surface::part(scroll) {
-  display: flex;
-  justify-content: center;
+  display: block;
 }
 
 .detail-shell {
@@ -524,7 +523,19 @@ h1 {
   display: flex;
   gap: 8px;
   overflow-x: auto;
-  padding-bottom: 2px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(8, 37, 74, 0.25) transparent;
+  padding-bottom: 8px;
+}
+
+.status-actions::-webkit-scrollbar {
+  height: 4px;
+}
+
+.status-actions::-webkit-scrollbar-thumb {
+  background: rgba(8, 37, 74, 0.25);
+  border-radius: 999px;
 }
 
 .status-actions button {

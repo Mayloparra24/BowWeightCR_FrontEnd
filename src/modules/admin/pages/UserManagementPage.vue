@@ -224,7 +224,19 @@ h1 {
   display: flex;
   gap: 7px;
   overflow-x: auto;
-  padding-bottom: 13px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(8, 37, 74, 0.25) transparent;
+  padding-bottom: 8px;
+}
+
+.filter-row::-webkit-scrollbar {
+  height: 4px;
+}
+
+.filter-row::-webkit-scrollbar-thumb {
+  background: rgba(8, 37, 74, 0.25);
+  border-radius: 999px;
 }
 
 .filter-row button {
