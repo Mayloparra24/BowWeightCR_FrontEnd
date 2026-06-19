@@ -186,17 +186,22 @@ const statusOptions = [
 
 const canCreateBovino = computed(() => {
   const role = currentUser.value?.role;
-  return role === 'ganadero' || role === 'asistente';
+  return role === 'ganadero';
 });
 
 const isVet = computed(() => currentUser.value?.role === 'veterinario');
+const isAssistant = computed(() => currentUser.value?.role === 'asistente');
 
-const farmFilterLabel = computed(() => (isVet.value ? 'Todas las fincas asignadas' : 'Todas mis fincas'));
+const farmFilterLabel = computed(() =>
+  isVet.value || isAssistant.value ? 'Todas las fincas asignadas' : 'Todas mis fincas',
+);
 
 const emptyStateMessage = computed(() =>
   isVet.value
     ? 'Cuando tengas bovinos asignados por tus clientes, apareceran aqui.'
-    : 'Cuando registres bovinos en tus fincas, apareceran aqui.',
+    : isAssistant.value
+      ? 'Aun no tienes bovinos asignados. Cuando te asignen fincas con bovinos, apareceran aqui.'
+      : 'Cuando registres bovinos en tus fincas, apareceran aqui.',
 );
 
 onIonViewWillEnter(async () => {

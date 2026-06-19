@@ -270,7 +270,7 @@ const maxWeight = computed(() => Math.max(...orderedRecords.value.map((record) =
 const finca = computed(() => fincas.value.find((item) => item.id === bovino.value?.farmId));
 const canManageStatus = computed(() => {
   const role = currentUser.value?.role;
-  return role === 'ganadero' || role === 'asistente' || role === 'admin';
+  return role === 'ganadero' || role === 'admin';
 });
 const isVet = computed(() => currentUser.value?.role === 'veterinario');
 

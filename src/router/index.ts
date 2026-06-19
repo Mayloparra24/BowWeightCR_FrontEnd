@@ -46,7 +46,7 @@ const routes: Array<RouteRecordRaw> = [
         name: 'fincas',
         component: () => import('@/modules/fincas/pages/FarmListPage.vue'),
         meta: {
-          roles: ['ganadero', 'asistente', 'veterinario'],
+          roles: ['ganadero', 'veterinario'],
         },
       },
       {
@@ -78,7 +78,7 @@ const routes: Array<RouteRecordRaw> = [
         name: 'recordatorios',
         component: () => import('@/modules/recordatorios/pages/RemindersPage.vue'),
         meta: {
-          roles: ['ganadero', 'asistente'],
+          roles: ['ganadero'],
         },
       },
       {

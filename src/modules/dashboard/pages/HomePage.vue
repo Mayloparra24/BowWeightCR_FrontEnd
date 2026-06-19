@@ -299,7 +299,7 @@ const isVet = computed(() => currentUser.value?.role === 'veterinario');
 const isFarmerDashboard = computed(() => !isAdmin.value && !isAssistant.value && !isVet.value);
 const canManageReminders = computed(() => {
   const role = currentUser.value?.role;
-  return role === 'ganadero' || role === 'asistente' || isFarmerDashboard.value;
+  return role === 'ganadero' || isFarmerDashboard.value;
 });
 
 const fincas = ref<Finca[]>([]);
