@@ -7,16 +7,16 @@
     "dev": "vite",
     "build": "vue-tsc && vite build",
     "preview": "vite preview",
-        "test:e2e": "cypress run",
+    "test:e2e": "cypress run",
     "test:unit": "vitest",
     "test:unit:coverage": "vitest run --coverage",
-    "typecheck": "vue-tsc --noEmit"
-,
+    "typecheck": "vue-tsc --noEmit",
     "lint": "eslint ."
   },
   "dependencies": {
     "@capacitor/android": "8.4.0",
     "@capacitor/app": "8.1.0",
+    "@capacitor/clipboard": "^8.0.1",
     "@capacitor/core": "8.4.0",
     "@capacitor/filesystem": "^8.1.2",
     "@capacitor/haptics": "8.0.2",

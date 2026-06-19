@@ -49,7 +49,7 @@ http://ionicframework.com/docs/theming/ */
     --bw-warning-text: #74601d;
 
     /* Safe areas / navegación */
-    --bw-tab-bar-height: 72px;
+    --bw-tab-bar-height: 56px;
     --bw-safe-top: env(safe-area-inset-top);
     --bw-safe-bottom: env(safe-area-inset-bottom);
     --bw-page-pad-top: max(22px, var(--bw-safe-top));

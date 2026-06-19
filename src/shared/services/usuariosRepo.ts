@@ -94,4 +94,9 @@ export const usuariosRepo = {
       throw new Error(extractApiError(error));
     }
   },
+
+  async disponiblesPorRol(rol: string): Promise<{ id: number; nombre_completo: string; correo_electronico: string }[]> {
+    const { data } = await apiClient.get(`/usuarios-disponibles/${rol}`);
+    return data.data;
+  },
 };

@@ -57,9 +57,15 @@
               <ion-icon :icon="refreshOutline" />
               Generar otra
             </button>
-            <button type="button" @click="copyTemporaryPassword">
+            <button
+              type="button"
+              class="copy"
+              :class="{ copied: passwordCopiada }"
+              :disabled="!temporaryPassword"
+              @click="copyTemporaryPassword"
+            >
               <ion-icon :icon="copyOutline" />
-              Copiar
+              {{ passwordCopiada ? 'Copiada' : 'Copiar' }}
             </button>
           </div>
 
@@ -126,6 +132,7 @@
 
 <script setup lang="ts">
 import { IonContent, IonIcon, IonPage, onIonViewWillLeave, onIonViewWillEnter } from '@ionic/vue';
+import { Clipboard } from '@capacitor/clipboard';
 import {
   arrowForwardOutline,
   chevronBackOutline,
@@ -158,6 +165,7 @@ const temporaryPassword = ref(generateTemporaryPassword());
 const showPassword = ref(false);
 const creando = ref(false);
 const formError = ref('');
+const passwordCopiada = ref(false);
 
 const cleanFullName = computed(() => fullName.value.trim());
 const cleanEmail = computed(() => email.value.trim().toLowerCase());
@@ -216,7 +224,16 @@ function generateTemporaryPassword() {
 }
 
 async function copyTemporaryPassword() {
-  await navigator.clipboard?.writeText(temporaryPassword.value);
+  if (!temporaryPassword.value) return;
+  try {
+    await Clipboard.write({ string: temporaryPassword.value });
+    passwordCopiada.value = true;
+    window.setTimeout(() => {
+      passwordCopiada.value = false;
+    }, 1800);
+  } catch {
+    formError.value = 'No se pudo copiar la contraseña. Copiala manualmente.';
+  }
 }
 
 async function crearUsuario() {
@@ -392,19 +409,28 @@ input::placeholder {
 }
 
 .password-actions button {
-  min-height: 38px;
+  min-height: 36px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 5px;
   border: 0;
   border-radius: 8px;
-  background: #d8e8f7;
-  color: #052b66;
-  font-size: 11px;
+  background: #2f75b5;
+  color: #ffffff;
+  font-size: 12px;
   font-weight: 900;
   line-height: 1;
   white-space: nowrap;
+}
+
+.password-actions button:disabled {
+  opacity: 0.5;
+}
+
+.password-actions button.copy.copied {
+  background: #d8e8f7;
+  color: #052b66;
 }
 
 .password-actions ion-icon {

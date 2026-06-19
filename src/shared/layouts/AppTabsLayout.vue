@@ -56,6 +56,7 @@ const navItems = computed(() => {
     return [
       { tab: 'inicio', href: '/app/inicio', label: 'Inicio', icon: home },
       { tab: 'fincas', href: '/app/fincas', label: 'Fincas', icon: layersOutline },
+      { tab: 'bovinos', href: '/app/bovinos', label: 'Bovinos', icon: businessOutline },
       { tab: 'configuracion', href: '/app/configuracion', label: 'Config.', icon: cogOutline },
     ];
   }
@@ -89,9 +90,9 @@ ion-tab-bar {
   padding: 0 0 var(--bw-safe-bottom) 0;
   border-top: 1px solid rgba(8, 37, 74, 0.08);
   border-radius: 0;
-  background: rgba(255, 255, 255, 0.98);
-  --background: rgba(255, 255, 255, 0.98);
-  box-shadow: 0 -6px 18px rgba(8, 37, 74, 0.06);
+  background: #ffffff;
+  --background: #ffffff;
+  box-shadow: 0 -2px 8px rgba(8, 37, 74, 0.04);
 }
 
 ion-tab-button {
@@ -102,9 +103,9 @@ ion-tab-button {
   --background: transparent;
   --background-focused: transparent;
   --background-focused-opacity: 0;
-  --padding-bottom: 7px;
-  --padding-top: 5px;
-  min-height: 62px;
+  --padding-bottom: 5px;
+  --padding-top: 4px;
+  min-height: 48px;
   font-size: 9px;
   font-weight: 800;
 }
@@ -123,7 +124,6 @@ ion-tab-button ion-label {
     left: 50%;
     right: auto;
     transform: translateX(-50%);
-    overflow: hidden;
     background: #f5f8fb;
   }
 }

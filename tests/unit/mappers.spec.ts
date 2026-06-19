@@ -67,7 +67,7 @@ describe('mappers', () => {
       bovino_id: 1,
       peso_final: 380,
       tipo_pesaje: 'ia',
-      es_correccion_manual: true,
+      es_correccion_manual: false,
       registrado_el: '2026-06-15T12:00:00Z',
       peso_estimado: 375,
       confianza_ia: 0.94,
@@ -75,7 +75,7 @@ describe('mappers', () => {
     const pesaje = mapPesaje(dto);
     expect(pesaje.source).toBe('IA');
     expect(pesaje.weightKg).toBe(380);
-    expect(pesaje.esCorreccion).toBe(true);
+    expect(pesaje.esCorreccion).toBe(false);
     expect(pesaje.confianzaIa).toBe(0.94);
   });
 

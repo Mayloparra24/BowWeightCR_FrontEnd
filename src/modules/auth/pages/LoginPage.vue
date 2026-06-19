@@ -172,7 +172,7 @@ const handleLogin = async () => {
   --background: transparent;
   position: relative;
   min-height: 100vh;
-  overflow: hidden;
+  overflow: auto;
 }
 
 .login-bg {

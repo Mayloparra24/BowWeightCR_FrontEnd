@@ -45,16 +45,25 @@ const routes: Array<RouteRecordRaw> = [
         path: 'fincas',
         name: 'fincas',
         component: () => import('@/modules/fincas/pages/FarmListPage.vue'),
+        meta: {
+          roles: ['ganadero', 'asistente', 'veterinario'],
+        },
       },
       {
         path: 'bovinos',
         name: 'bovinos',
         component: () => import('@/modules/animales/pages/BovinoListPage.vue'),
+        meta: {
+          roles: ['ganadero', 'asistente', 'veterinario'],
+        },
       },
       {
         path: 'bovinos/:id',
         name: 'bovino-detail',
         component: () => import('@/modules/animales/pages/BovinoDetailPage.vue'),
+        meta: {
+          roles: ['ganadero', 'asistente', 'veterinario'],
+        },
       },
       {
         path: 'calcular-peso',
@@ -69,7 +78,7 @@ const routes: Array<RouteRecordRaw> = [
         name: 'recordatorios',
         component: () => import('@/modules/recordatorios/pages/RemindersPage.vue'),
         meta: {
-          roles: ['ganadero', 'asistente'],
+          roles: ['ganadero'],
         },
       },
       {
@@ -77,7 +86,7 @@ const routes: Array<RouteRecordRaw> = [
         name: 'shared-report',
         component: () => import('@/modules/reportes/pages/SharedReportPage.vue'),
         meta: {
-          roles: ['admin', 'ganadero'],
+          roles: ['ganadero'],
         },
       },
       {
@@ -110,6 +119,14 @@ const routes: Array<RouteRecordRaw> = [
         component: () => import('@/modules/admin/pages/AuditLogPage.vue'),
         meta: {
           roles: ['admin'],
+        },
+      },
+      {
+        path: 'fincas/:id/asignar',
+        name: 'farm-assign',
+        component: () => import('@/modules/fincas/pages/FarmAssignmentPage.vue'),
+        meta: {
+          roles: ['ganadero'],
         },
       },
       {
