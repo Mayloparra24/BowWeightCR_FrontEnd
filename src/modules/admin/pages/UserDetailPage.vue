@@ -249,6 +249,19 @@ const confirmarEliminar = async () => {
   eliminarError.value = '';
   eliminarSuccess.value = '';
   try {
+    // Revalidar que el usuario todavía existe antes de eliminar
+    await usuariosRepo.get(user.value.id);
+  } catch {
+    eliminarError.value = 'El usuario ya no existe o fue eliminado.';
+    eliminando.value = false;
+    window.setTimeout(() => {
+      mostrarConfirmarEliminar.value = false;
+      router.push('/app/usuarios');
+    }, 1200);
+    return;
+  }
+
+  try {
     await usuariosRepo.remove(user.value.id);
     eliminarSuccess.value = 'Usuario eliminado correctamente.';
     mostrarConfirmarEliminar.value = false;
@@ -257,8 +270,15 @@ const confirmarEliminar = async () => {
     }, 600);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'No fue posible eliminar el usuario.';
-    if (message.toLowerCase().includes('propio')) {
+    const normalized = message.toLowerCase();
+    if (normalized.includes('propio')) {
       eliminarError.value = 'No podés eliminar tu propio usuario.';
+    } else if (normalized.includes('no query results') || normalized.includes('no se encontró') || normalized.includes('not found')) {
+      eliminarError.value = 'El usuario ya no existe o fue eliminado.';
+      window.setTimeout(() => {
+        mostrarConfirmarEliminar.value = false;
+        router.push('/app/usuarios');
+      }, 1200);
     } else {
       eliminarError.value = message;
     }

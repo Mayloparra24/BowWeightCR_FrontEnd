@@ -35,25 +35,31 @@
           </button>
         </div>
 
-        <section class="user-panel" :class="{ empty: !visibleUsers.length }" aria-label="Listado de usuarios">
-          <div v-if="visibleUsers.length" class="table-head">
-            <span>Nombre</span>
-            <span>Rol</span>
-            <span>Estado</span>
-            <span>Acciones</span>
+        <section class="user-panel" :class="{ empty: !visibleUsers.length && !cargando }" aria-label="Listado de usuarios">
+          <div v-if="cargando" class="empty-state">
+            <strong>Cargando usuarios...</strong>
           </div>
 
-          <article v-for="user in visibleUsers" :key="user.id" class="user-row">
-            <div>
-              <h2>{{ user.fullName }}</h2>
-              <p>{{ user.email }}</p>
+          <template v-else-if="visibleUsers.length">
+            <div class="table-head">
+              <span>Nombre</span>
+              <span>Rol</span>
+              <span>Estado</span>
+              <span>Acciones</span>
             </div>
-            <span class="pill role">{{ roleLabel(user.role) }}</span>
-            <span class="pill" :class="user.status">{{ user.status }}</span>
-            <router-link :to="`/app/usuarios/${user.id}`">Ver</router-link>
-          </article>
 
-          <div v-if="!visibleUsers.length" class="empty-state">
+            <article v-for="user in visibleUsers" :key="user.id" class="user-row">
+              <div>
+                <h2>{{ user.fullName }}</h2>
+                <p>{{ user.email }}</p>
+              </div>
+              <span class="pill role">{{ roleLabel(user.role) }}</span>
+              <span class="pill" :class="user.status">{{ user.status }}</span>
+              <router-link :to="`/app/usuarios/${user.id}`">Ver</router-link>
+            </article>
+          </template>
+
+          <div v-else class="empty-state">
             <strong>{{ loadError || 'No hay usuarios registrados.' }}</strong>
             <span>
               {{
@@ -80,16 +86,21 @@ const users = ref<Usuario[]>([]);
 const search = ref('');
 const selectedFilter = ref('Todos');
 const loadError = ref('');
+const cargando = ref(false);
 const filters = ['Todos', 'Ganaderos', 'Asistentes', 'Veterinarios', 'Administradores', 'Inactivos'];
 
 onIonViewWillEnter(async () => {
+  cargando.value = true;
+  users.value = [];
+  loadError.value = '';
   try {
-    loadError.value = '';
     const { items } = await usuariosRepo.list(100);
     users.value = items;
   } catch (error) {
     loadError.value = error instanceof Error ? error.message : 'No fue posible cargar los usuarios.';
     users.value = [];
+  } finally {
+    cargando.value = false;
   }
 });
 
