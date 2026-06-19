@@ -5,13 +5,16 @@
     <div class="animal-main">
       <div class="animal-title-row">
         <h2>{{ bovino.name }}</h2>
-        <router-link :to="`/app/bovinos/${bovino.id}`">Ver más</router-link>
+        <router-link :to="`/app/bovinos/${bovino.id}`">Ver mas</router-link>
       </div>
       <p>{{ bovino.breed }} - {{ bovino.sex }}</p>
       <p class="muted">Arete {{ bovino.earTag }}</p>
       <p class="muted">
-        {{ bovino.lastWeightDate ? `Último pesaje ${bovino.lastWeightDate}` : 'Sin pesaje registrado' }}
+        {{ bovino.lastWeightDate ? `Ultimo pesaje ${bovino.lastWeightDate}` : 'Sin pesaje registrado' }}
       </p>
+      <span v-if="bovino.status !== 'Activo'" class="status-pill">
+        {{ bovino.status }}{{ bovino.motivoInactividad ? ` - ${bovino.motivoInactividad}` : '' }}
+      </span>
     </div>
 
     <strong v-if="bovino.lastWeightKg > 0" class="weight">{{ bovino.lastWeightKg }} Kg</strong>
@@ -84,6 +87,20 @@ p {
 
 .muted {
   color: #4f79a8;
+}
+
+.status-pill {
+  width: max-content;
+  max-width: 100%;
+  display: inline-block;
+  margin-top: 6px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #fff4d6;
+  color: #7a4b00;
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1.15;
 }
 
 .weight {

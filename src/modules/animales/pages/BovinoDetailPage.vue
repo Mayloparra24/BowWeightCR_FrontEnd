@@ -33,7 +33,7 @@
                 v-if="bovino.status === 'Activo'"
                 type="button"
                 class="active"
-                @click="marcarInactivo"
+                @click="abrirInactivacion"
               >
                 Marcar inactivo
               </button>
@@ -156,6 +156,43 @@
           </div>
         </form>
       </div>
+
+      <div v-if="inactivando" class="modal-backdrop" @click.self="cerrarInactivacion">
+        <form class="modal-card" @submit.prevent="confirmarInactivacion">
+          <h2>Marcar bovino inactivo</h2>
+          <p class="readonly-note">
+            El animal quedara fuera de la lista de activos, pero se conserva su historial.
+          </p>
+
+          <fieldset class="reason-options">
+            <legend>Motivo</legend>
+            <label v-for="option in motivosInactividad" :key="option">
+              <input v-model="motivoInactividad" type="radio" :value="option" />
+              <span>{{ option }}</span>
+            </label>
+          </fieldset>
+
+          <label>
+            <span>Detalle opcional</span>
+            <textarea
+              v-model="detalleInactividad"
+              rows="2"
+              placeholder="Ej. vendido a comprador local"
+            ></textarea>
+          </label>
+
+          <p v-if="statusError" class="modal-error">{{ statusError }}</p>
+
+          <div class="modal-actions">
+            <button type="button" class="modal-cancel" :disabled="guardandoEstado" @click="cerrarInactivacion">
+              Cancelar
+            </button>
+            <button type="submit" class="modal-save danger-save" :disabled="guardandoEstado">
+              {{ guardandoEstado ? 'Guardando...' : 'Confirmar' }}
+            </button>
+          </div>
+        </form>
+      </div>
     </ion-content>
   </ion-page>
 </template>
@@ -222,7 +259,13 @@ const canManageStatus = computed(() => {
 });
 
 const editando = ref(false);
+const inactivando = ref(false);
 const editError = ref('');
+const statusError = ref('');
+const guardandoEstado = ref(false);
+const motivosInactividad = ['Vendido', 'Fallecido', 'Otro'];
+const motivoInactividad = ref('Vendido');
+const detalleInactividad = ref('');
 const form = reactive({
   name: '',
   breedId: '',
@@ -262,25 +305,48 @@ const guardarEdicion = async () => {
   }
 };
 
-const marcarInactivo = async () => {
+const abrirInactivacion = () => {
   if (!bovino.value) return;
-  const motivo = prompt('Motivo de inactividad (obligatorio):');
-  if (!motivo || !motivo.trim()) return;
+  motivoInactividad.value = 'Vendido';
+  detalleInactividad.value = '';
+  statusError.value = '';
+  inactivando.value = true;
+};
+
+const cerrarInactivacion = () => {
+  if (guardandoEstado.value) return;
+  inactivando.value = false;
+  statusError.value = '';
+};
+
+const confirmarInactivacion = async () => {
+  if (!bovino.value) return;
+  statusError.value = '';
+
+  const detalle = detalleInactividad.value.trim();
+  const motivo = detalle ? `${motivoInactividad.value}: ${detalle}` : motivoInactividad.value;
+
   try {
-    bovino.value = await bovinosRepo.inactivar(bovino.value.id, motivo.trim());
+    guardandoEstado.value = true;
+    bovino.value = await bovinosRepo.inactivar(bovino.value.id, motivo);
+    inactivando.value = false;
   } catch (error) {
-    editError.value = error instanceof Error ? error.message : 'No fue posible cambiar el estado.';
-    editando.value = false;
+    statusError.value = error instanceof Error ? error.message : 'No fue posible cambiar el estado.';
+  } finally {
+    guardandoEstado.value = false;
   }
 };
 
 const reactivar = async () => {
   if (!bovino.value) return;
+  statusError.value = '';
   try {
+    guardandoEstado.value = true;
     bovino.value = await bovinosRepo.activar(bovino.value.id);
   } catch (error) {
-    editError.value = error instanceof Error ? error.message : 'No fue posible reactivar el bovino.';
-    editando.value = false;
+    statusError.value = error instanceof Error ? error.message : 'No fue posible reactivar el bovino.';
+  } finally {
+    guardandoEstado.value = false;
   }
 };
 
@@ -715,7 +781,7 @@ h1 {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  padding: 16px;
+  padding: 16px 16px calc(var(--bw-tab-bar-height) + var(--bw-safe-bottom) + 18px);
   background: rgba(7, 24, 50, 0.45);
 }
 
@@ -724,7 +790,9 @@ h1 {
   max-width: 430px;
   display: grid;
   gap: 12px;
-  padding: 20px 18px 22px;
+  max-height: calc(100vh - var(--bw-tab-bar-height) - var(--bw-safe-bottom) - 72px);
+  overflow-y: auto;
+  padding: 20px 18px 18px;
   border-radius: 16px 16px 10px 10px;
   background: var(--bw-surface, #f5f8fb);
   box-shadow: 0 -10px 30px rgba(7, 24, 50, 0.25);
@@ -765,6 +833,41 @@ h1 {
 
 .modal-card textarea {
   resize: none;
+}
+
+.reason-options {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.reason-options legend {
+  margin-bottom: 2px;
+  color: var(--bw-header, #08254a);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.reason-options label {
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+  border: 1px solid var(--bw-border, #e4e8ef);
+  border-radius: 8px;
+  background: var(--bw-white, #ffffff);
+  color: var(--bw-text, #071832);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.reason-options input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--bw-primary, #052b66);
 }
 
 .readonly-note {
@@ -810,5 +913,9 @@ h1 {
   border: none;
   background: var(--bw-primary, #052b66);
   color: var(--bw-white, #ffffff);
+}
+
+.danger-save {
+  background: var(--bw-error-text, #b42318);
 }
 </style>
