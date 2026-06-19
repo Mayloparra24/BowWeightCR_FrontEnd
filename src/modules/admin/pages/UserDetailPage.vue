@@ -33,7 +33,7 @@
           <article>
             <h3>Estado</h3>
             <span class="status-pill" :class="user.status">{{ user.status }}</span>
-            <button class="status-action" type="button" :disabled="guardando" @click="toggleStatus">
+            <button class="status-action" type="button" :disabled="guardando || esUsuarioActual" @click="toggleStatus">
               {{ user.status === 'activo' ? 'Desactivar cuenta' : 'Activar cuenta' }}
             </button>
             <p v-if="errorEstado" class="estado-error">{{ errorEstado }}</p>

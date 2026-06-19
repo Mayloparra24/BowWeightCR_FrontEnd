@@ -36,7 +36,7 @@
             <p :class="['vet-alert', vetSummary.tone]">{{ vetSummary.message }}</p>
           </section>
 
-          <button v-if="canManageStatus" type="button" class="edit-button" @click="abrirEdicion">
+          <button v-if="canManageStatus && bovino.status === 'Activo'" type="button" class="edit-button" @click="abrirEdicion">
             <ion-icon :icon="createOutline" />
             Editar información
           </button>
@@ -253,9 +253,14 @@ const cargarBovino = async () => {
 };
 
 onIonViewWillEnter(async () => {
-  const [f, r] = await Promise.all([fincasRepo.list(), razasRepo.list()]);
-  fincas.value = f;
-  razas.value = r;
+  try {
+    const [f, r] = await Promise.all([fincasRepo.list(), razasRepo.list()]);
+    fincas.value = f;
+    razas.value = r;
+  } catch {
+    fincas.value = [];
+    razas.value = [];
+  }
   await cargarBovino();
 });
 

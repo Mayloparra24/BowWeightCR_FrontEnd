@@ -36,6 +36,7 @@
             </div>
             <div class="farm-actions">
               <router-link :to="`/app/bovinos?finca=${farm.id}`">Ver</router-link>
+              <router-link v-if="isFarmer" :to="`/app/fincas/${farm.id}/asignar`">Asignar</router-link>
               <button v-if="isFarmer" type="button" class="icon-action" aria-label="Editar finca" @click="abrirEditar(farm)">
                 <ion-icon :icon="createOutline" />
               </button>

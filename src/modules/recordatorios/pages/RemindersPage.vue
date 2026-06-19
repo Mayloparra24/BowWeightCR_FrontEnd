@@ -116,23 +116,27 @@ const cargar = async () => {
     bovinos.value = [];
   }
 
-  const lista = await listarRecordatorios();
-  Object.keys(config).forEach((key) => delete config[key]);
-  lista.forEach((item) => {
-    config[item.bovinoId] = item;
-  });
+  try {
+    const lista = await listarRecordatorios();
+    Object.keys(config).forEach((key) => delete config[key]);
+    lista.forEach((item) => {
+      config[item.bovinoId] = item;
+    });
 
-  bovinosDisponibles.value.forEach((bovino) => {
-    if (!(bovino.id in seleccion)) {
-      seleccion[bovino.id] = config[bovino.id]?.cadaDias ?? 30;
-    }
-  });
+    bovinosDisponibles.value.forEach((bovino) => {
+      if (!(bovino.id in seleccion)) {
+        seleccion[bovino.id] = config[bovino.id]?.cadaDias ?? 30;
+      }
+    });
 
-  await marcarRecordatoriosVistos(
-    Object.fromEntries(
-      recordatoriosPendientes.value.map((bovino) => [bovino.id, reminderStateKey(bovino)]),
-    ),
-  );
+    await marcarRecordatoriosVistos(
+      Object.fromEntries(
+        recordatoriosPendientes.value.map((bovino) => [bovino.id, reminderStateKey(bovino)]),
+      ),
+    );
+  } catch {
+    mensajeOk.value = 'No se pudieron cargar los recordatorios.';
+  }
 };
 
 onIonViewWillEnter(cargar);
@@ -154,19 +158,27 @@ const activar = async (bovino: Bovino) => {
     return;
   }
 
-  const cadaDias = seleccion[bovino.id] ?? 30;
-  const recordatorio = await programarRecordatorio(bovino.id, bovino.name, cadaDias);
-  config[bovino.id] = recordatorio;
+  try {
+    const cadaDias = seleccion[bovino.id] ?? 30;
+    const recordatorio = await programarRecordatorio(bovino.id, bovino.name, cadaDias);
+    config[bovino.id] = recordatorio;
 
-  mensajeOk.value = soportaNotificaciones
-    ? `Recordatorio activado para ${bovino.name}. Te avisaremos el ${formatearFecha(recordatorio.proximoAviso)}.`
-    : `Recordatorio guardado para ${bovino.name}. El aviso del teléfono llegará desde la app instalada en Android.`;
+    mensajeOk.value = soportaNotificaciones
+      ? `Recordatorio activado para ${bovino.name}. Te avisaremos el ${formatearFecha(recordatorio.proximoAviso)}.`
+      : `Recordatorio guardado para ${bovino.name}. El aviso del teléfono llegará desde la app instalada en Android.`;
+  } catch {
+    mensajeOk.value = `No se pudo activar el recordatorio para ${bovino.name}.`;
+  }
 };
 
 const quitar = async (bovino: Bovino) => {
-  await cancelarRecordatorio(bovino.id);
-  delete config[bovino.id];
-  mensajeOk.value = `Recordatorio de ${bovino.name} eliminado.`;
+  try {
+    await cancelarRecordatorio(bovino.id);
+    delete config[bovino.id];
+    mensajeOk.value = `Recordatorio de ${bovino.name} eliminado.`;
+  } catch {
+    mensajeOk.value = `No se pudo eliminar el recordatorio de ${bovino.name}.`;
+  }
 };
 
 const formatearFecha = (iso: string) => {

@@ -46,7 +46,7 @@ const routes: Array<RouteRecordRaw> = [
         name: 'fincas',
         component: () => import('@/modules/fincas/pages/FarmListPage.vue'),
         meta: {
-          roles: ['ganadero', 'veterinario'],
+          roles: ['ganadero', 'asistente', 'veterinario'],
         },
       },
       {
@@ -119,6 +119,14 @@ const routes: Array<RouteRecordRaw> = [
         component: () => import('@/modules/admin/pages/AuditLogPage.vue'),
         meta: {
           roles: ['admin'],
+        },
+      },
+      {
+        path: 'fincas/:id/asignar',
+        name: 'farm-assign',
+        component: () => import('@/modules/fincas/pages/FarmAssignmentPage.vue'),
+        meta: {
+          roles: ['ganadero'],
         },
       },
       {

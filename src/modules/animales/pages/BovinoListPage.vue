@@ -205,10 +205,17 @@ const emptyStateMessage = computed(() =>
 );
 
 onIonViewWillEnter(async () => {
-  const [b, f, r] = await Promise.all([bovinosRepo.list(), fincasRepo.list(), razasRepo.list()]);
-  bovinos.value = b;
-  fincas.value = f;
-  razas.value = r;
+  try {
+    const [b, f, r] = await Promise.all([bovinosRepo.list(), fincasRepo.list(), razasRepo.list()]);
+    bovinos.value = b;
+    fincas.value = f;
+    razas.value = r;
+  } catch {
+    search.value = '';
+    bovinos.value = [];
+    fincas.value = [];
+    razas.value = [];
+  }
 });
 
 const bovinosVisibles = computed(() => {

@@ -270,7 +270,7 @@ import {
   enqueueEstimacion,
   isOnline,
 } from '@/shared/services/offlineService';
-import { compressImage } from '@/shared/utils/bovinoPhoto';
+import { dataUrlToBlob } from '@/shared/utils/bovinoPhoto';
 import type { Bovino, Finca, Raza } from '@/shared/types/domain';
 
 type FlowStep = 'foto' | 'existe' | 'seleccion' | 'registro' | 'procesando' | 'resultado' | 'exito';
@@ -435,6 +435,10 @@ const calcularExistente = async () => {
     formError.value = 'No se encontró la fotografía. Volvé a tomar la foto.';
     return;
   }
+  if (bovinoSeleccionado.value.status !== 'Activo') {
+    formError.value = 'El bovino seleccionado ya no está activo. No se puede estimar su peso.';
+    return;
+  }
   modoNuevo.value = false;
   step.value = 'procesando';
 
@@ -453,7 +457,7 @@ const calcularExistente = async () => {
   }
 
   try {
-    const foto = await compressImage(photoDataUrl.value);
+    const foto = dataUrlToBlob(photoDataUrl.value);
     const resultado = await pesajesRepo.estimar({
       bovinoId: bovinoSeleccionado.value.id,
       razaId: bovinoSeleccionado.value.breedId,
@@ -514,7 +518,7 @@ const calcularNuevo = async () => {
       notes: nuevo.notes.trim(),
     });
 
-    const foto = await compressImage(photoDataUrl.value);
+    const foto = dataUrlToBlob(photoDataUrl.value);
     const resultado = await pesajesRepo.estimar({
       bovinoId: bovino.id,
       razaId: nuevo.breedId,
