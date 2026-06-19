@@ -110,6 +110,8 @@
             No hay bovinos activos en tus fincas. Regístralo como bovino nuevo.
           </p>
 
+          <p v-if="formError" class="error-note">{{ formError }}</p>
+
           <div class="actions">
             <button class="cancel-button" type="button" @click="step = 'existe'">Atrás</button>
             <button
@@ -419,10 +421,17 @@ const goBack = () => {
 };
 
 const calcularExistente = async () => {
-  if (!bovinoSeleccionado.value) return;
+  formError.value = '';
+  if (!bovinoSeleccionado.value) {
+    formError.value = 'Seleccione un bovino válido.';
+    return;
+  }
+  if (!bovinoSeleccionado.value.breedId) {
+    formError.value = 'El bovino seleccionado no tiene raza registrada.';
+    return;
+  }
   modoNuevo.value = false;
   step.value = 'procesando';
-  formError.value = '';
 
   if (!isOnline.value) {
     await enqueueEstimacion({

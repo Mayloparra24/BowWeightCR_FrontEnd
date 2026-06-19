@@ -49,15 +49,14 @@ export const pesajesRepo = {
     const formData = new FormData();
     formData.append('bovino_id', input.bovinoId);
     formData.append('raza_id', input.razaId);
-    formData.append('foto', input.foto);
+    const fotoFile = new File([input.foto], 'foto.jpg', { type: input.foto.type || 'image/jpeg' });
+    formData.append('foto', fotoFile);
     formData.append('modo_offline', input.modoOffline ? '1' : '0');
 
     try {
       const { data, status } = await apiClient.post<
         ApiEnvelope<PesajeDTO | EstimacionOfflineDTO>
-      >('/pesajes/estimar', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      >('/pesajes/estimar', formData);
 
       if (status === 202) {
         const offline = data.data as EstimacionOfflineDTO;
