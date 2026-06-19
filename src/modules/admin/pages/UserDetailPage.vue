@@ -19,9 +19,9 @@
           </div>
         </section>
 
-        <section v-if="user" class="detail-list" aria-label="InformaciÃ³n del usuario">
+        <section v-if="user" class="detail-list" aria-label="Información del usuario">
           <article>
-            <h3>Ãšltimo inicio de sesiÃ³n</h3>
+            <h3>Último inicio de sesión</h3>
             <p>Sin registros.</p>
           </article>
 
@@ -40,13 +40,13 @@
           </article>
 
           <article>
-            <h3>ContraseÃ±a</h3>
+            <h3>Contraseña</h3>
             <div class="password-reset-box">
               <input
                 :value="nuevaPassword"
                 type="text"
                 readonly
-                placeholder="GenerÃ¡ y guardÃ¡ una nueva clave"
+                placeholder="Generá y guardá una nueva clave"
               />
               <p class="password-hint">
                 Al generar una nueva clave, queda guardada de inmediato. Copiala antes de salir.
