@@ -45,7 +45,7 @@
         <label v-if="fincas.length > 1" class="filter-field">
           <span>Finca</span>
           <select v-model="selectedFarmId">
-            <option value="">Todas mis fincas</option>
+            <option value="">{{ farmFilterLabel }}</option>
             <option v-for="finca in fincas" :key="finca.id" :value="finca.id">
               {{ finca.name }}
             </option>
@@ -70,7 +70,7 @@
 
         <section v-else class="empty-state">
           <strong>No hay bovinos disponibles.</strong>
-          <span>Cuando registres bovinos en tus fincas, apareceran aqui.</span>
+          <span>{{ emptyStateMessage }}</span>
         </section>
       </section>
 
@@ -188,6 +188,16 @@ const canCreateBovino = computed(() => {
   const role = currentUser.value?.role;
   return role === 'ganadero' || role === 'asistente';
 });
+
+const isVet = computed(() => currentUser.value?.role === 'veterinario');
+
+const farmFilterLabel = computed(() => (isVet.value ? 'Todas las fincas asignadas' : 'Todas mis fincas'));
+
+const emptyStateMessage = computed(() =>
+  isVet.value
+    ? 'Cuando tengas bovinos asignados por tus clientes, apareceran aqui.'
+    : 'Cuando registres bovinos en tus fincas, apareceran aqui.',
+);
 
 onIonViewWillEnter(async () => {
   const [b, f, r] = await Promise.all([bovinosRepo.list(), fincasRepo.list(), razasRepo.list()]);

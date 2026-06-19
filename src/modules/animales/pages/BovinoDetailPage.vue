@@ -21,6 +21,21 @@
             <span>{{ bovino.status }}</span>
           </section>
 
+          <section v-if="isVet" class="vet-summary">
+            <h2>Resumen veterinario</h2>
+            <div class="vet-summary-grid">
+              <article>
+                <span>Ultimo peso</span>
+                <strong>{{ vetSummary.lastWeight }}</strong>
+              </article>
+              <article>
+                <span>Crecimiento reciente</span>
+                <strong>{{ vetSummary.growth }}</strong>
+              </article>
+            </div>
+            <p :class="['vet-alert', vetSummary.tone]">{{ vetSummary.message }}</p>
+          </section>
+
           <button v-if="canManageStatus" type="button" class="edit-button" @click="abrirEdicion">
             <ion-icon :icon="createOutline" />
             Editar información
@@ -257,6 +272,7 @@ const canManageStatus = computed(() => {
   const role = currentUser.value?.role;
   return role === 'ganadero' || role === 'asistente' || role === 'admin';
 });
+const isVet = computed(() => currentUser.value?.role === 'veterinario');
 
 const editando = ref(false);
 const inactivando = ref(false);
@@ -364,6 +380,55 @@ const trendTone = computed(() => {
   if (trendLabel.value === 'Aumento de peso') return 'good';
   if (trendLabel.value === 'Posible baja de peso') return 'warning';
   return 'neutral';
+});
+const vetSummary = computed(() => {
+  const records = orderedRecords.value;
+  const last = records.at(-1);
+  const previous = records.at(-2);
+
+  if (!last) {
+    return {
+      lastWeight: 'Sin registro',
+      growth: 'Sin datos',
+      tone: 'warning',
+      message: 'Este bovino no tiene pesajes registrados. Conviene tomar o solicitar un primer pesaje.',
+    };
+  }
+
+  if (!previous) {
+    return {
+      lastWeight: `${last.weightKg} kg`,
+      growth: 'Sin comparativo',
+      tone: 'neutral',
+      message: 'Solo hay un pesaje registrado. Se necesita otro dato para evaluar crecimiento.',
+    };
+  }
+
+  const difference = last.weightKg - previous.weightKg;
+  if (difference < 0) {
+    return {
+      lastWeight: `${last.weightKg} kg`,
+      growth: `-${Math.abs(difference)} kg`,
+      tone: 'danger',
+      message: 'El peso bajo respecto al registro anterior. Revisar salud, alimentacion o posible error de captura.',
+    };
+  }
+
+  if (difference <= 5) {
+    return {
+      lastWeight: `${last.weightKg} kg`,
+      growth: `+${difference} kg`,
+      tone: 'warning',
+      message: 'El crecimiento reciente es bajo. Conviene revisar alimentacion y condicion del animal.',
+    };
+  }
+
+  return {
+    lastWeight: `${last.weightKg} kg`,
+    growth: `+${difference} kg`,
+    tone: 'good',
+    message: 'El crecimiento reciente no muestra alertas evidentes.',
+  };
 });
 const reporte = computed<ReporteBovino | null>(() => {
   if (!bovino.value) return null;
@@ -481,6 +546,79 @@ h1 {
   color: #052b66;
   font-size: 10px;
   font-weight: 900;
+}
+
+.vet-summary {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 22px;
+  padding: 14px;
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1px solid rgba(8, 37, 74, 0.08);
+  box-shadow: 0 12px 24px rgba(8, 37, 74, 0.06);
+}
+
+.vet-summary h2 {
+  margin: 0;
+  color: #052b66;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.vet-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.vet-summary-grid article {
+  display: grid;
+  gap: 4px;
+  padding: 11px;
+  border-radius: 8px;
+  background: #d8e8f7;
+}
+
+.vet-summary-grid span {
+  color: #566071;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.vet-summary-grid strong {
+  color: #052b66;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.vet-alert {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.vet-alert.good {
+  background: #d8f3dc;
+  color: #175c2e;
+}
+
+.vet-alert.neutral {
+  background: #d8e8f7;
+  color: #052b66;
+}
+
+.vet-alert.warning {
+  background: #fff4d6;
+  color: #7a4b00;
+}
+
+.vet-alert.danger {
+  background: rgba(217, 45, 32, 0.1);
+  color: #b42318;
 }
 
 .chart-section,

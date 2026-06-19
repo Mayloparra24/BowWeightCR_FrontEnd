@@ -56,6 +56,7 @@ const navItems = computed(() => {
     return [
       { tab: 'inicio', href: '/app/inicio', label: 'Inicio', icon: home },
       { tab: 'fincas', href: '/app/fincas', label: 'Fincas', icon: layersOutline },
+      { tab: 'bovinos', href: '/app/bovinos', label: 'Bovinos', icon: businessOutline },
       { tab: 'configuracion', href: '/app/configuracion', label: 'Config.', icon: cogOutline },
     ];
   }

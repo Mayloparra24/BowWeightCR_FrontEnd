@@ -74,6 +74,31 @@
 
           <section class="activity-section">
             <div class="activity-heading">
+              <h1>Requieren atención</h1>
+              <router-link to="/app/bovinos">Ver todos</router-link>
+            </div>
+
+            <div v-if="bovinosAtencion.length" class="animal-feed">
+              <router-link
+                v-for="item in bovinosAtencion"
+                :key="item.bovino.id"
+                class="animal-row attention"
+                :to="`/app/bovinos/${item.bovino.id}`"
+              >
+                <img :src="bovinoPhoto(item.bovino.photoUrl)" alt="" @error="onBovinoPhotoError" />
+                <span>
+                  <strong>{{ item.bovino.name }}</strong>
+                  <small>{{ farmName(item.bovino.farmId) }}<br />{{ item.reason }}</small>
+                </span>
+                <span class="attention-badge">{{ item.tone }}</span>
+              </router-link>
+            </div>
+
+            <p v-else class="empty-state">No hay alertas veterinarias pendientes.</p>
+          </section>
+
+          <section class="activity-section">
+            <div class="activity-heading">
               <h1>Actividad reciente</h1>
               <router-link to="/app/bovinos">Ver historial</router-link>
             </div>
@@ -83,7 +108,7 @@
                 v-for="bovino in bovinosRecientes"
                 :key="bovino.id"
                 class="animal-row"
-                to="/app/bovinos"
+                :to="`/app/bovinos/${bovino.id}`"
               >
                 <img :src="bovinoPhoto(bovino.photoUrl)" alt="" @error="onBovinoPhotoError" />
                 <span>
@@ -348,6 +373,37 @@ const adminStats = computed(() => ({
 }));
 
 const bovinosRecientes = computed(() => bovinos.value.slice(0, 2));
+const bovinosAtencion = computed(() => {
+  return bovinos.value
+    .map((bovino) => {
+      if (bovino.lastWeightKg <= 0) {
+        return { bovino, reason: 'Sin pesaje registrado', tone: 'Revisar' };
+      }
+
+      const days = daysSinceLastWeight(bovino.lastWeightDate);
+      if (days >= 120) {
+        return { bovino, reason: `Ultimo pesaje hace ${days} dias`, tone: 'Pendiente' };
+      }
+
+      const registros = [...(bovino.pesajes ?? [])].sort(
+        (a, b) => parseRecordDate(b.date).getTime() - parseRecordDate(a.date).getTime(),
+      );
+      const [ultimo, anterior] = registros;
+      if (ultimo && anterior) {
+        const diferencia = ultimo.weightKg - anterior.weightKg;
+        if (diferencia < 0) {
+          return { bovino, reason: `Bajo ${Math.abs(diferencia)} kg desde el ultimo pesaje`, tone: 'Alerta' };
+        }
+        if (diferencia <= 5) {
+          return { bovino, reason: `Crecimiento bajo: +${diferencia} kg`, tone: 'Observar' };
+        }
+      }
+
+      return null;
+    })
+    .filter((item): item is { bovino: Bovino; reason: string; tone: string } => item !== null)
+    .slice(0, 3);
+});
 const ultimosPesajes = computed(() => bovinos.value.filter((bovino) => bovino.lastWeightKg > 0).slice(0, 2));
 const reminders = computed(() => {
   return bovinos.value
@@ -409,6 +465,12 @@ function daysSinceLastWeight(value: string) {
   const date = new Date(year, month - 1, day);
   if (Number.isNaN(date.getTime())) return 999;
   return Math.floor((Date.now() - date.getTime()) / 86_400_000);
+}
+
+function parseRecordDate(value: string) {
+  const [day, month, year] = value.split('/').map(Number);
+  const date = new Date(year, month - 1, day);
+  return Number.isNaN(date.getTime()) ? new Date(0) : date;
 }
 
 const reminderStateKey = (bovino: Bovino) => {
@@ -819,6 +881,22 @@ const reminderStateKey = (bovino: Bovino) => {
   line-height: 1.15;
   text-align: right;
   text-transform: uppercase;
+}
+
+.animal-row.attention {
+  border-left: 4px solid #b42318;
+}
+
+.attention-badge {
+  align-self: end;
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: #fff4d6;
+  color: #7a4b00;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .reminder-section {
