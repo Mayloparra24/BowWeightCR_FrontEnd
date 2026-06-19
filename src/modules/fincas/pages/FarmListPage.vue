@@ -30,7 +30,7 @@
             <div class="pin">
               <ion-icon :icon="locationOutline" />
             </div>
-            <div>
+            <div class="farm-info">
               <h2>{{ farm.name }}</h2>
               <p>{{ farm.location }}</p>
             </div>
@@ -323,11 +323,11 @@ const visibleFarms = computed(() => {
 }
 
 .farm-card {
-  min-height: 72px;
+  min-height: 104px;
   display: grid;
-  grid-template-columns: 38px minmax(0, 1fr) auto;
-  gap: 12px;
-  align-items: center;
+  grid-template-columns: 38px minmax(0, 1fr);
+  gap: 10px 12px;
+  align-items: start;
   padding: 12px;
   border-radius: 10px;
   background: #052b66;
@@ -345,17 +345,25 @@ const visibleFarms = computed(() => {
   color: #052b66;
 }
 
+.farm-info {
+  min-width: 0;
+}
+
 h2 {
   margin: 0;
   color: #ffffff;
   font-size: 13px;
   font-weight: 900;
+  line-height: 1.18;
+  overflow-wrap: anywhere;
 }
 
 .farm-card p {
   margin: 4px 0 0;
   color: #cfe0f5;
   font-size: 11px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
 }
 
 .farm-card a {
@@ -418,14 +426,23 @@ h2 {
 }
 
 .farm-actions {
-  display: flex;
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 34px 34px;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.farm-actions a {
+  justify-content: center;
+  min-width: 0;
+  padding: 0 10px;
 }
 
 .icon-action {
-  width: 30px;
-  height: 30px;
+  width: 34px;
+  height: 34px;
   display: grid;
   place-items: center;
   border: none;

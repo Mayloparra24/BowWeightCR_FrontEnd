@@ -55,16 +55,6 @@
                 <button type="button" class="status-action" :disabled="guardandoPassword" @click="generarYGuardarPassword">
                   {{ guardandoPassword ? 'Guardando...' : 'Generar y guardar' }}
                 </button>
-                <button
-                  type="button"
-                  class="status-action save"
-                  :class="{ copied: passwordCopiada }"
-                  :disabled="!nuevaPassword || guardandoPassword"
-                  @click="copiarPassword"
-                >
-                  <ion-icon :icon="copyOutline" />
-                  {{ passwordCopiada ? 'Copiada' : 'Copiar' }}
-                </button>
               </div>
             </div>
             <p v-if="passwordSuccess" class="password-success">{{ passwordSuccess }}</p>
@@ -116,8 +106,7 @@
 
 <script setup lang="ts">
 import { IonContent, IonIcon, IonPage, onIonViewWillEnter } from '@ionic/vue';
-import { Clipboard } from '@capacitor/clipboard';
-import { chevronBackOutline, copyOutline, trashOutline } from 'ionicons/icons';
+import { chevronBackOutline, trashOutline } from 'ionicons/icons';
 import { computed, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { currentUser } from '@/modules/auth/services/sessionService';
@@ -134,7 +123,6 @@ const nuevaPassword = ref('');
 const guardandoPassword = ref(false);
 const passwordError = ref('');
 const passwordSuccess = ref('');
-const passwordCopiada = ref(false);
 
 const eliminando = ref(false);
 const mostrarConfirmarEliminar = ref(false);
@@ -197,7 +185,6 @@ const generarPassword = () => {
   nuevaPassword.value = result;
   passwordError.value = '';
   passwordSuccess.value = '';
-  passwordCopiada.value = false;
 };
 
 const generarYGuardarPassword = async () => {
@@ -214,20 +201,6 @@ const generarYGuardarPassword = async () => {
     passwordError.value = error instanceof Error ? error.message : 'No fue posible actualizar la contraseña.';
   } finally {
     guardandoPassword.value = false;
-  }
-};
-
-const copiarPassword = async () => {
-  if (!nuevaPassword.value) return;
-  try {
-    await Clipboard.write({ string: nuevaPassword.value });
-    passwordCopiada.value = true;
-    passwordSuccess.value = 'Clave copiada al portapapeles.';
-    window.setTimeout(() => {
-      passwordCopiada.value = false;
-    }, 1800);
-  } catch {
-    passwordError.value = 'No se pudo copiar la clave. Copiala manualmente.';
   }
 };
 
@@ -440,10 +413,6 @@ h3 {
   opacity: 0.5;
 }
 
-.status-action.save {
-  background: #2f75b5;
-}
-
 .estado-error {
   margin: 8px 0 0;
   color: #b42318;
@@ -480,11 +449,6 @@ h3 {
 .password-actions {
   display: flex;
   gap: 10px;
-}
-
-.status-action.copied {
-  background: #d8e8f7;
-  color: #052b66;
 }
 
 .password-success {
