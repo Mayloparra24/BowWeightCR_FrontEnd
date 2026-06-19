@@ -42,11 +42,24 @@
             capture="environment"
             @change="onPhotoSelected"
           />
+          <input
+            ref="galleryInput"
+            class="file-input"
+            type="file"
+            accept="image/*"
+            @change="onPhotoSelected"
+          />
 
-          <button class="primary-button" type="button" @click="openCamera">
-            <ion-icon :icon="cameraOutline" />
-            {{ photoUrl ? 'Tomar otra foto' : 'Tomar foto' }}
-          </button>
+          <div class="photo-actions">
+            <button class="primary-button" type="button" @click="openCamera">
+              <ion-icon :icon="cameraOutline" />
+              {{ photoUrl ? 'Tomar otra foto' : 'Tomar foto' }}
+            </button>
+            <button class="secondary-button" type="button" @click="openGallery">
+              <ion-icon :icon="imagesOutline" />
+              {{ photoUrl ? 'Cambiar imagen' : 'Subir de galería' }}
+            </button>
+          </div>
 
           <p class="notice">
             El peso calculado es una estimación de apoyo y no reemplaza la báscula
@@ -96,6 +109,8 @@
           <p v-if="!bovinosDisponibles.length" class="empty-note">
             No hay bovinos activos en tus fincas. Regístralo como bovino nuevo.
           </p>
+
+          <p v-if="formError" class="error-note">{{ formError }}</p>
 
           <div class="actions">
             <button class="cancel-button" type="button" @click="step = 'existe'">Atrás</button>
@@ -244,7 +259,7 @@
 
 <script setup lang="ts">
 import { IonContent, IonIcon, IonPage, IonSpinner, onIonViewWillEnter, onIonViewWillLeave } from '@ionic/vue';
-import { cameraOutline, checkmarkOutline, chevronBackOutline } from 'ionicons/icons';
+import { cameraOutline, checkmarkOutline, chevronBackOutline, imagesOutline } from 'ionicons/icons';
 import { computed, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { bovinosRepo } from '@/shared/services/bovinosRepo';
@@ -255,7 +270,7 @@ import {
   enqueueEstimacion,
   isOnline,
 } from '@/shared/services/offlineService';
-import { compressImage } from '@/shared/utils/bovinoPhoto';
+import { dataUrlToBlob } from '@/shared/utils/bovinoPhoto';
 import type { Bovino, Finca, Raza } from '@/shared/types/domain';
 
 type FlowStep = 'foto' | 'existe' | 'seleccion' | 'registro' | 'procesando' | 'resultado' | 'exito';
@@ -264,6 +279,7 @@ const router = useRouter();
 
 const step = ref<FlowStep>('foto');
 const fileInput = ref<HTMLInputElement | null>(null);
+const galleryInput = ref<HTMLInputElement | null>(null);
 const photoUrl = ref('');
 const photoDataUrl = ref('');
 
@@ -358,6 +374,13 @@ const openCamera = () => {
   }
 };
 
+const openGallery = () => {
+  if (galleryInput.value) {
+    galleryInput.value.value = '';
+    galleryInput.value.click();
+  }
+};
+
 const onPhotoSelected = (event: Event) => {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0];
@@ -375,6 +398,7 @@ const onPhotoSelected = (event: Event) => {
 
   setTimeout(() => {
     if (fileInput.value) fileInput.value.value = '';
+    if (galleryInput.value) galleryInput.value.value = '';
   }, 100);
 };
 
@@ -398,10 +422,25 @@ const goBack = () => {
 };
 
 const calcularExistente = async () => {
-  if (!bovinoSeleccionado.value) return;
+  formError.value = '';
+  if (!bovinoSeleccionado.value) {
+    formError.value = 'Seleccione un bovino válido.';
+    return;
+  }
+  if (!bovinoSeleccionado.value.breedId) {
+    formError.value = 'El bovino seleccionado no tiene raza registrada.';
+    return;
+  }
+  if (!photoDataUrl.value) {
+    formError.value = 'No se encontró la fotografía. Volvé a tomar la foto.';
+    return;
+  }
+  if (bovinoSeleccionado.value.status !== 'Activo') {
+    formError.value = 'El bovino seleccionado ya no está activo. No se puede estimar su peso.';
+    return;
+  }
   modoNuevo.value = false;
   step.value = 'procesando';
-  formError.value = '';
 
   if (!isOnline.value) {
     await enqueueEstimacion({
@@ -418,7 +457,7 @@ const calcularExistente = async () => {
   }
 
   try {
-    const foto = await compressImage(photoDataUrl.value);
+    const foto = dataUrlToBlob(photoDataUrl.value);
     const resultado = await pesajesRepo.estimar({
       bovinoId: bovinoSeleccionado.value.id,
       razaId: bovinoSeleccionado.value.breedId,
@@ -456,6 +495,11 @@ const calcularNuevo = async () => {
     return;
   }
 
+  if (!photoDataUrl.value) {
+    formError.value = 'No se encontró la fotografía. Volvé a tomar la foto.';
+    return;
+  }
+
   if (!isOnline.value) {
     formError.value = 'Se requiere conexión para registrar un bovino nuevo.';
     return;
@@ -474,7 +518,7 @@ const calcularNuevo = async () => {
       notes: nuevo.notes.trim(),
     });
 
-    const foto = await compressImage(photoDataUrl.value);
+    const foto = dataUrlToBlob(photoDataUrl.value);
     const resultado = await pesajesRepo.estimar({
       bovinoId: bovino.id,
       razaId: nuevo.breedId,
@@ -550,8 +594,7 @@ const guardar = async () => {
 }
 
 .page-surface::part(scroll) {
-  display: flex;
-  justify-content: center;
+  display: block;
 }
 
 .flow-shell {
@@ -658,6 +701,11 @@ const guardar = async () => {
 
 .file-input {
   display: none;
+}
+
+.photo-actions {
+  display: grid;
+  gap: 12px;
 }
 
 .primary-button,

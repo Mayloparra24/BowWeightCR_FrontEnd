@@ -21,7 +21,22 @@
             <span>{{ bovino.status }}</span>
           </section>
 
-          <button v-if="canManageStatus" type="button" class="edit-button" @click="abrirEdicion">
+          <section v-if="isVet" class="vet-summary">
+            <h2>Resumen veterinario</h2>
+            <div class="vet-summary-grid">
+              <article>
+                <span>Ultimo peso</span>
+                <strong>{{ vetSummary.lastWeight }}</strong>
+              </article>
+              <article>
+                <span>Crecimiento reciente</span>
+                <strong>{{ vetSummary.growth }}</strong>
+              </article>
+            </div>
+            <p :class="['vet-alert', vetSummary.tone]">{{ vetSummary.message }}</p>
+          </section>
+
+          <button v-if="canManageStatus && bovino.status === 'Activo'" type="button" class="edit-button" @click="abrirEdicion">
             <ion-icon :icon="createOutline" />
             Editar información
           </button>
@@ -33,7 +48,7 @@
                 v-if="bovino.status === 'Activo'"
                 type="button"
                 class="active"
-                @click="marcarInactivo"
+                @click="abrirInactivacion"
               >
                 Marcar inactivo
               </button>
@@ -156,6 +171,43 @@
           </div>
         </form>
       </div>
+
+      <div v-if="inactivando" class="modal-backdrop" @click.self="cerrarInactivacion">
+        <form class="modal-card" @submit.prevent="confirmarInactivacion">
+          <h2>Marcar bovino inactivo</h2>
+          <p class="readonly-note">
+            El animal quedara fuera de la lista de activos, pero se conserva su historial.
+          </p>
+
+          <fieldset class="reason-options">
+            <legend>Motivo</legend>
+            <label v-for="option in motivosInactividad" :key="option">
+              <input v-model="motivoInactividad" type="radio" :value="option" />
+              <span>{{ option }}</span>
+            </label>
+          </fieldset>
+
+          <label>
+            <span>Detalle opcional</span>
+            <textarea
+              v-model="detalleInactividad"
+              rows="2"
+              placeholder="Ej. vendido a comprador local"
+            ></textarea>
+          </label>
+
+          <p v-if="statusError" class="modal-error">{{ statusError }}</p>
+
+          <div class="modal-actions">
+            <button type="button" class="modal-cancel" :disabled="guardandoEstado" @click="cerrarInactivacion">
+              Cancelar
+            </button>
+            <button type="submit" class="modal-save danger-save" :disabled="guardandoEstado">
+              {{ guardandoEstado ? 'Guardando...' : 'Confirmar' }}
+            </button>
+          </div>
+        </form>
+      </div>
     </ion-content>
   </ion-page>
 </template>
@@ -201,9 +253,14 @@ const cargarBovino = async () => {
 };
 
 onIonViewWillEnter(async () => {
-  const [f, r] = await Promise.all([fincasRepo.list(), razasRepo.list()]);
-  fincas.value = f;
-  razas.value = r;
+  try {
+    const [f, r] = await Promise.all([fincasRepo.list(), razasRepo.list()]);
+    fincas.value = f;
+    razas.value = r;
+  } catch {
+    fincas.value = [];
+    razas.value = [];
+  }
   await cargarBovino();
 });
 
@@ -218,11 +275,18 @@ const maxWeight = computed(() => Math.max(...orderedRecords.value.map((record) =
 const finca = computed(() => fincas.value.find((item) => item.id === bovino.value?.farmId));
 const canManageStatus = computed(() => {
   const role = currentUser.value?.role;
-  return role === 'ganadero' || role === 'asistente' || role === 'admin';
+  return role === 'ganadero' || role === 'admin';
 });
+const isVet = computed(() => currentUser.value?.role === 'veterinario');
 
 const editando = ref(false);
+const inactivando = ref(false);
 const editError = ref('');
+const statusError = ref('');
+const guardandoEstado = ref(false);
+const motivosInactividad = ['Vendido', 'Fallecido', 'Otro'];
+const motivoInactividad = ref('Vendido');
+const detalleInactividad = ref('');
 const form = reactive({
   name: '',
   breedId: '',
@@ -262,25 +326,48 @@ const guardarEdicion = async () => {
   }
 };
 
-const marcarInactivo = async () => {
+const abrirInactivacion = () => {
   if (!bovino.value) return;
-  const motivo = prompt('Motivo de inactividad (obligatorio):');
-  if (!motivo || !motivo.trim()) return;
+  motivoInactividad.value = 'Vendido';
+  detalleInactividad.value = '';
+  statusError.value = '';
+  inactivando.value = true;
+};
+
+const cerrarInactivacion = () => {
+  if (guardandoEstado.value) return;
+  inactivando.value = false;
+  statusError.value = '';
+};
+
+const confirmarInactivacion = async () => {
+  if (!bovino.value) return;
+  statusError.value = '';
+
+  const detalle = detalleInactividad.value.trim();
+  const motivo = detalle ? `${motivoInactividad.value}: ${detalle}` : motivoInactividad.value;
+
   try {
-    bovino.value = await bovinosRepo.inactivar(bovino.value.id, motivo.trim());
+    guardandoEstado.value = true;
+    bovino.value = await bovinosRepo.inactivar(bovino.value.id, motivo);
+    inactivando.value = false;
   } catch (error) {
-    editError.value = error instanceof Error ? error.message : 'No fue posible cambiar el estado.';
-    editando.value = false;
+    statusError.value = error instanceof Error ? error.message : 'No fue posible cambiar el estado.';
+  } finally {
+    guardandoEstado.value = false;
   }
 };
 
 const reactivar = async () => {
   if (!bovino.value) return;
+  statusError.value = '';
   try {
+    guardandoEstado.value = true;
     bovino.value = await bovinosRepo.activar(bovino.value.id);
   } catch (error) {
-    editError.value = error instanceof Error ? error.message : 'No fue posible reactivar el bovino.';
-    editando.value = false;
+    statusError.value = error instanceof Error ? error.message : 'No fue posible reactivar el bovino.';
+  } finally {
+    guardandoEstado.value = false;
   }
 };
 
@@ -298,6 +385,55 @@ const trendTone = computed(() => {
   if (trendLabel.value === 'Aumento de peso') return 'good';
   if (trendLabel.value === 'Posible baja de peso') return 'warning';
   return 'neutral';
+});
+const vetSummary = computed(() => {
+  const records = orderedRecords.value;
+  const last = records.at(-1);
+  const previous = records.at(-2);
+
+  if (!last) {
+    return {
+      lastWeight: 'Sin registro',
+      growth: 'Sin datos',
+      tone: 'warning',
+      message: 'Este bovino no tiene pesajes registrados. Conviene tomar o solicitar un primer pesaje.',
+    };
+  }
+
+  if (!previous) {
+    return {
+      lastWeight: `${last.weightKg} kg`,
+      growth: 'Sin comparativo',
+      tone: 'neutral',
+      message: 'Solo hay un pesaje registrado. Se necesita otro dato para evaluar crecimiento.',
+    };
+  }
+
+  const difference = last.weightKg - previous.weightKg;
+  if (difference < 0) {
+    return {
+      lastWeight: `${last.weightKg} kg`,
+      growth: `-${Math.abs(difference)} kg`,
+      tone: 'danger',
+      message: 'El peso bajo respecto al registro anterior. Revisar salud, alimentacion o posible error de captura.',
+    };
+  }
+
+  if (difference <= 5) {
+    return {
+      lastWeight: `${last.weightKg} kg`,
+      growth: `+${difference} kg`,
+      tone: 'warning',
+      message: 'El crecimiento reciente es bajo. Conviene revisar alimentacion y condicion del animal.',
+    };
+  }
+
+  return {
+    lastWeight: `${last.weightKg} kg`,
+    growth: `+${difference} kg`,
+    tone: 'good',
+    message: 'El crecimiento reciente no muestra alertas evidentes.',
+  };
 });
 const reporte = computed<ReporteBovino | null>(() => {
   if (!bovino.value) return null;
@@ -336,8 +472,7 @@ const compartirReporte = async () => {
 }
 
 .page-surface::part(scroll) {
-  display: flex;
-  justify-content: center;
+  display: block;
 }
 
 .detail-shell {
@@ -416,6 +551,79 @@ h1 {
   color: #052b66;
   font-size: 10px;
   font-weight: 900;
+}
+
+.vet-summary {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 22px;
+  padding: 14px;
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1px solid rgba(8, 37, 74, 0.08);
+  box-shadow: 0 12px 24px rgba(8, 37, 74, 0.06);
+}
+
+.vet-summary h2 {
+  margin: 0;
+  color: #052b66;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.vet-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.vet-summary-grid article {
+  display: grid;
+  gap: 4px;
+  padding: 11px;
+  border-radius: 8px;
+  background: #d8e8f7;
+}
+
+.vet-summary-grid span {
+  color: #566071;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.vet-summary-grid strong {
+  color: #052b66;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.vet-alert {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.vet-alert.good {
+  background: #d8f3dc;
+  color: #175c2e;
+}
+
+.vet-alert.neutral {
+  background: #d8e8f7;
+  color: #052b66;
+}
+
+.vet-alert.warning {
+  background: #fff4d6;
+  color: #7a4b00;
+}
+
+.vet-alert.danger {
+  background: rgba(217, 45, 32, 0.1);
+  color: #b42318;
 }
 
 .chart-section,
@@ -524,7 +732,19 @@ h1 {
   display: flex;
   gap: 8px;
   overflow-x: auto;
-  padding-bottom: 2px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(8, 37, 74, 0.25) transparent;
+  padding-bottom: 8px;
+}
+
+.status-actions::-webkit-scrollbar {
+  height: 4px;
+}
+
+.status-actions::-webkit-scrollbar-thumb {
+  background: rgba(8, 37, 74, 0.25);
+  border-radius: 999px;
 }
 
 .status-actions button {
@@ -704,7 +924,7 @@ h1 {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  padding: 16px;
+  padding: 16px 16px calc(var(--bw-tab-bar-height) + var(--bw-safe-bottom) + 18px);
   background: rgba(7, 24, 50, 0.45);
 }
 
@@ -713,7 +933,9 @@ h1 {
   max-width: 430px;
   display: grid;
   gap: 12px;
-  padding: 20px 18px 22px;
+  max-height: calc(100vh - var(--bw-tab-bar-height) - var(--bw-safe-bottom) - 72px);
+  overflow-y: auto;
+  padding: 20px 18px 18px;
   border-radius: 16px 16px 10px 10px;
   background: var(--bw-surface, #f5f8fb);
   box-shadow: 0 -10px 30px rgba(7, 24, 50, 0.25);
@@ -754,6 +976,41 @@ h1 {
 
 .modal-card textarea {
   resize: none;
+}
+
+.reason-options {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.reason-options legend {
+  margin-bottom: 2px;
+  color: var(--bw-header, #08254a);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.reason-options label {
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+  border: 1px solid var(--bw-border, #e4e8ef);
+  border-radius: 8px;
+  background: var(--bw-white, #ffffff);
+  color: var(--bw-text, #071832);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.reason-options input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--bw-primary, #052b66);
 }
 
 .readonly-note {
@@ -799,5 +1056,9 @@ h1 {
   border: none;
   background: var(--bw-primary, #052b66);
   color: var(--bw-white, #ffffff);
+}
+
+.danger-save {
+  background: var(--bw-error-text, #b42318);
 }
 </style>

@@ -36,6 +36,7 @@
             </div>
             <div class="farm-actions">
               <router-link :to="`/app/bovinos?finca=${farm.id}`">Ver</router-link>
+              <router-link v-if="isFarmer" :to="`/app/fincas/${farm.id}/asignar`">Asignar</router-link>
               <button v-if="isFarmer" type="button" class="icon-action" aria-label="Editar finca" @click="abrirEditar(farm)">
                 <ion-icon :icon="createOutline" />
               </button>
@@ -108,6 +109,7 @@ import type { Finca } from '@/shared/types/domain';
 
 const search = ref('');
 const isFarmer = computed(() => currentUser.value?.role === 'ganadero' || currentUser.value?.role === 'asistente');
+const isVet = computed(() => currentUser.value?.role === 'veterinario');
 
 const fincas = ref<Finca[]>([]);
 const cargando = ref(true);
@@ -205,6 +207,7 @@ const pageTitle = computed(() => (isFarmer.value ? 'Mis fincas' : 'Fincas asigna
 
 const infoText = computed(() => {
   if (isFarmer.value) return 'Aquí se muestran las fincas registradas para tu cuenta.';
+  if (isVet.value) return 'Solo se muestran las fincas que un ganadero o asistente te ha asignado.';
   return 'Solo se muestran las fincas que el administrador te ha asignado.';
 });
 
@@ -212,6 +215,7 @@ const emptyTitle = computed(() => (isFarmer.value ? 'No hay fincas registradas.'
 
 const emptyText = computed(() => {
   if (isFarmer.value) return 'Cuando registres una finca, aparecerá en esta lista.';
+  if (isVet.value) return 'Cuando un ganadero o asistente te asigne fincas, aparecerán en esta lista.';
   return 'Cuando el administrador asigne fincas, aparecerán en esta lista.';
 });
 
@@ -225,7 +229,7 @@ const visibleFarms = computed(() => {
 <style scoped>
 .page-surface {
   --background: #f5f8fb;
-  --padding-bottom: calc(var(--bw-page-pad-bottom-tabs) + 120px);
+  --padding-bottom: var(--bw-page-pad-bottom-tabs);
 }
 
 .page-surface::part(scroll) {
@@ -316,7 +320,6 @@ const visibleFarms = computed(() => {
   display: grid;
   gap: 12px;
   margin-top: 18px;
-  padding-bottom: calc(var(--bw-page-pad-bottom-tabs) + 144px);
 }
 
 .farm-card {
@@ -380,7 +383,6 @@ h2 {
   background: rgba(255, 255, 255, 0.7);
   color: #566071;
   text-align: center;
-  margin-bottom: calc(var(--bw-page-pad-bottom-tabs) + 80px);
 }
 
 .empty-state strong {

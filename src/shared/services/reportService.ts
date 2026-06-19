@@ -340,38 +340,62 @@ const baseName = (report: ReporteBovino) => normalizeFilename(report.bovino.name
 
 /** Boton "descargar": exporta el historial del bovino como CSV (guarda). */
 export const exportBovinoCsv = async (report: ReporteBovino) => {
-  const filename = `historial-${baseName(report)}.csv`;
-  await guardarArchivo(filename, csvBovino(report));
+  try {
+    const filename = `historial-${baseName(report)}.csv`;
+    await guardarArchivo(filename, csvBovino(report));
+  } catch {
+    await Toast.show({ text: 'No se pudo exportar el CSV.', duration: 'short' });
+  }
 };
 
 /** Boton "documento": genera y guarda el reporte del bovino en PDF. */
 export const printBovinoReport = async (report: ReporteBovino) => {
-  const filename = `reporte-${baseName(report)}.pdf`;
-  await guardarArchivo(filename, await pdfBovino(report));
+  try {
+    const filename = `reporte-${baseName(report)}.pdf`;
+    await guardarArchivo(filename, await pdfBovino(report));
+  } catch {
+    await Toast.show({ text: 'No se pudo generar el PDF.', duration: 'short' });
+  }
 };
 
 /** Boton "compartir": comparte el PDF del bovino como archivo adjunto. */
 export const shareBovinoReport = async (report: ReporteBovino) => {
-  const filename = `reporte-${baseName(report)}.pdf`;
-  await compartirArchivo(filename, await pdfBovino(report), 'application/pdf', `Reporte de ${report.bovino.name}`);
+  try {
+    const filename = `reporte-${baseName(report)}.pdf`;
+    await compartirArchivo(filename, await pdfBovino(report), 'application/pdf', `Reporte de ${report.bovino.name}`);
+  } catch {
+    await Toast.show({ text: 'No se pudo compartir el reporte.', duration: 'short' });
+  }
 };
 
 /** Inventario (SharedReportPage): CSV (guarda). */
 export const exportInventarioCsv = async (bovinos: Bovino[], fincas: Finca[]) => {
-  await guardarArchivo('inventario-bovweight.csv', csvInventario(bovinos, fincas));
+  try {
+    await guardarArchivo('inventario-bovweight.csv', csvInventario(bovinos, fincas));
+  } catch {
+    await Toast.show({ text: 'No se pudo exportar el inventario.', duration: 'short' });
+  }
 };
 
 /** Inventario (SharedReportPage): PDF (guarda). */
 export const exportInventarioPdf = async (bovinos: Bovino[], fincas: Finca[], titulo: string) => {
-  await guardarArchivo('inventario-bovweight.pdf', await pdfInventario(bovinos, fincas, titulo));
+  try {
+    await guardarArchivo('inventario-bovweight.pdf', await pdfInventario(bovinos, fincas, titulo));
+  } catch {
+    await Toast.show({ text: 'No se pudo generar el PDF del inventario.', duration: 'short' });
+  }
 };
 
 /** Inventario (SharedReportPage): compartir PDF como archivo. */
 export const shareInventarioPdf = async (bovinos: Bovino[], fincas: Finca[], titulo: string) => {
-  await compartirArchivo(
-    'inventario-bovweight.pdf',
-    await pdfInventario(bovinos, fincas, titulo),
-    'application/pdf',
-    'Reporte BovWeightCR',
-  );
+  try {
+    await compartirArchivo(
+      'inventario-bovweight.pdf',
+      await pdfInventario(bovinos, fincas, titulo),
+      'application/pdf',
+      'Reporte BovWeightCR',
+    );
+  } catch {
+    await Toast.show({ text: 'No se pudo compartir el inventario.', duration: 'short' });
+  }
 };

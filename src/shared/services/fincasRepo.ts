@@ -59,4 +59,26 @@ export const fincasRepo = {
       throw new Error(extractApiError(error));
     }
   },
+
+  // Asignaciones de veterinarios/asistentes a fincas
+  async listAsignaciones(fincaId: string, rol: string): Promise<{ id: number; usuario: { id: number; nombre_completo: string; correo_electronico: string } | null; esta_activa: boolean; rol: string }[]> {
+    const { data } = await apiClient.get(`/fincas/${fincaId}/usuarios/${rol}`);
+    return data.data;
+  },
+
+  async asignarUsuario(fincaId: string, rol: string, usuarioId: string): Promise<void> {
+    try {
+      await apiClient.post(`/fincas/${fincaId}/usuarios/${rol}`, { usuario_id: usuarioId });
+    } catch (error) {
+      throw new Error(extractApiError(error));
+    }
+  },
+
+  async removerAsignacion(fincaId: string, asignacionId: number): Promise<void> {
+    try {
+      await apiClient.delete(`/fincas/${fincaId}/usuarios/${asignacionId}`);
+    } catch (error) {
+      throw new Error(extractApiError(error));
+    }
+  },
 };

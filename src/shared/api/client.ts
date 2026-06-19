@@ -29,13 +29,16 @@ const apiClient: AxiosInstance = axios.create({
     Accept: 'application/json',
     'Content-Type': 'application/json',
   },
-  timeout: 20000,
+  timeout: 60000,
 });
 
 apiClient.interceptors.request.use(async (config) => {
   const token = await getToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+  }
+  if (config.data instanceof FormData) {
+    delete config.headers['Content-Type'];
   }
   return config;
 });

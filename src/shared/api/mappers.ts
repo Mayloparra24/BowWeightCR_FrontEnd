@@ -71,7 +71,7 @@ export const mapPesaje = (dto: PesajeDTO): RegistroPeso => ({
   bovinoId: String(dto.bovino_id),
   date: formatFecha(dto.registrado_el),
   weightKg: dto.peso_final,
-  source: dto.tipo_pesaje === 'ia' ? 'IA' : 'Manual',
+  source: dto.es_correccion_manual ? 'Manual' : (dto.tipo_pesaje === 'ia' ? 'IA' : 'Manual'),
   pesoEstimado: dto.peso_estimado,
   confianzaIa: dto.confianza_ia,
   esCorreccion: dto.es_correccion_manual,
