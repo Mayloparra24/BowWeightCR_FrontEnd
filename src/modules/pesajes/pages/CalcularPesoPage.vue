@@ -398,6 +398,7 @@ const onPhotoSelected = (event: Event) => {
 
   setTimeout(() => {
     if (fileInput.value) fileInput.value.value = '';
+    if (galleryInput.value) galleryInput.value.value = '';
   }, 100);
 };
 
@@ -428,6 +429,10 @@ const calcularExistente = async () => {
   }
   if (!bovinoSeleccionado.value.breedId) {
     formError.value = 'El bovino seleccionado no tiene raza registrada.';
+    return;
+  }
+  if (!photoDataUrl.value) {
+    formError.value = 'No se encontró la fotografía. Volvé a tomar la foto.';
     return;
   }
   modoNuevo.value = false;
@@ -483,6 +488,11 @@ const calcularNuevo = async () => {
   const validationError = validarRegistroNuevo();
   if (validationError) {
     formError.value = validationError;
+    return;
+  }
+
+  if (!photoDataUrl.value) {
+    formError.value = 'No se encontró la fotografía. Volvé a tomar la foto.';
     return;
   }
 
