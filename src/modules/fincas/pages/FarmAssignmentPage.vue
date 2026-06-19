@@ -32,7 +32,7 @@
               <strong>{{ item.usuario?.nombre_completo ?? 'Usuario' }}</strong>
               <small>{{ item.usuario?.correo_electronico }}</small>
             </div>
-            <button type="button" class="remove-btn" :disabled="cargando" @click="quitar(item.id, item.usuario?.nombre_completo)">
+            <button type="button" class="remove-btn" :disabled="cargando" @click="quitar(item.id)">
               Quitar
             </button>
           </article>
@@ -75,13 +75,12 @@
 import { IonContent, IonIcon, IonPage, onIonViewWillEnter } from '@ionic/vue';
 import { addOutline, chevronBackOutline } from 'ionicons/icons';
 import { computed, ref } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { useRoute } from 'vue-router';
 import { fincasRepo } from '@/shared/services/fincasRepo';
 import { usuariosRepo } from '@/shared/services/usuariosRepo';
 import type { Finca } from '@/shared/types/domain';
 
 const route = useRoute();
-const router = useRouter();
 
 const farmId = String(route.params.id);
 const farmName = ref('');
@@ -165,7 +164,7 @@ const agregar = async () => {
   }
 };
 
-const quitar = async (asignacionId: number, nombre?: string) => {
+const quitar = async (asignacionId: number) => {
   cargando.value = true;
   error.value = '';
   try {
