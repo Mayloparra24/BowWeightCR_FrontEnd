@@ -3,6 +3,7 @@ import { extractApiError } from '@/shared/api/errors';
 import type { ApiEnvelope, BovinoDTO } from '@/shared/api/types';
 import { mapBovino } from '@/shared/api/mappers';
 import type { Bovino } from '@/shared/types/domain';
+import { CACHE_KEYS, getList, setList } from '@/shared/services/catalogCache';
 
 export interface BovinoInput {
   fincaId: string;
@@ -44,8 +45,14 @@ const toUpdatePayload = (input: UpdateBovinoInput) => {
 
 export const bovinosRepo = {
   async list(): Promise<Bovino[]> {
-    const { data } = await apiClient.get<ApiEnvelope<BovinoDTO[]>>('/bovinos');
-    return data.data.map(mapBovino);
+    try {
+      const { data } = await apiClient.get<ApiEnvelope<BovinoDTO[]>>('/bovinos');
+      const mapped = data.data.map(mapBovino);
+      await setList(CACHE_KEYS.bovinos, mapped);
+      return mapped;
+    } catch {
+      return getList<Bovino>(CACHE_KEYS.bovinos);
+    }
   },
 
   async get(id: string): Promise<Bovino> {

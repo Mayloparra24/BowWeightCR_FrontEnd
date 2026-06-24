@@ -19,8 +19,8 @@
           </div>
         </header>
 
-        <p v-if="!isOnline" class="offline-banner">
-          Sin conexión: la foto quedó guardada y se enviará cuando tenga internet.
+        <p v-if="!isOnline && ['foto','existe','seleccion','registro'].includes(step)" class="offline-banner">
+          La foto quedará en espera y se enviará cuando vuelva internet.
         </p>
 
         <!-- Paso 1: capturar fotografia -->
@@ -269,6 +269,7 @@ import { pesajesRepo } from '@/shared/services/pesajesRepo';
 import {
   enqueueEstimacion,
   isOnline,
+  onOnline,
 } from '@/shared/services/offlineService';
 import { dataUrlToBlob } from '@/shared/utils/bovinoPhoto';
 import type { Bovino, Finca, Raza } from '@/shared/types/domain';
@@ -316,6 +317,8 @@ const bovinoSeleccionado = computed(() => bovinos.value.find((item) => item.id =
 
 const hoyIso = new Date().toISOString().slice(0, 10);
 
+let unsubOnline: (() => void) | null = null;
+
 onIonViewWillEnter(async () => {
   try {
     const [f, b, r] = await Promise.all([fincasRepo.list(), bovinosRepo.list(), razasRepo.list()]);
@@ -325,7 +328,27 @@ onIonViewWillEnter(async () => {
   } catch (error) {
     formError.value = error instanceof Error ? error.message : 'No fue posible cargar los datos.';
   }
+  unsubOnline = onOnline(refreshLists);
 });
+
+const refreshLists = async () => {
+  const [f, b, r] = await Promise.all([fincasRepo.list(), bovinosRepo.list(), razasRepo.list()]);
+  fincas.value = f;
+  bovinos.value = b;
+  razas.value = r;
+
+  // Preserve-or-clear selection using bovinosDisponibles (filtered by status === 'Activo')
+  const bovinosDisponiblesList = b.filter((item) => item.status === 'Activo');
+  if (selectedBovinoId.value && !bovinosDisponiblesList.some((bv) => bv.id === selectedBovinoId.value)) {
+    selectedBovinoId.value = '';
+  }
+  if (nuevo.farmId && !f.some((fa) => fa.id === nuevo.farmId)) {
+    nuevo.farmId = '';
+  }
+  if (nuevo.breedId && !r.some((rz) => rz.id === nuevo.breedId)) {
+    nuevo.breedId = '';
+  }
+};
 
 const stepSubtitle = computed(() => {
   switch (step.value) {
@@ -407,6 +430,8 @@ onIonViewWillLeave(() => {
   photoUrl.value = '';
   photoDataUrl.value = '';
   step.value = 'foto';
+  unsubOnline?.();
+  unsubOnline = null;
 });
 
 const goBack = () => {
