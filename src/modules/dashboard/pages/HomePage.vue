@@ -139,7 +139,7 @@
               <strong>{{ pendingOfflineItems.length }} pendiente{{ pendingOfflineItems.length === 1 ? '' : 's' }}</strong>
               <span>{{ isOnline ? 'Conexión disponible' : 'Sin conexión' }}</span>
             </div>
-            <button type="button" :disabled="!isOnline || !pendingOfflineItems.length" @click="markOfflineQueueSynced">
+            <button type="button" :disabled="!isOnline || !pendingOfflineItems.length" @click="sincronizar">
               Enviar
             </button>
           </section>
@@ -200,7 +200,7 @@
               <strong>{{ pendingOfflineItems.length }} pendiente{{ pendingOfflineItems.length === 1 ? '' : 's' }}</strong>
               <span>{{ isOnline ? 'Listo para sincronizar' : 'Guardado sin conexión' }}</span>
             </div>
-            <button type="button" :disabled="!isOnline" @click="markOfflineQueueSynced">
+            <button type="button" :disabled="!isOnline" @click="sincronizar">
               Sincronizar
             </button>
           </section>
@@ -281,9 +281,9 @@ import { usuariosRepo } from '@/shared/services/usuariosRepo';
 import { bovinoPhoto, onBovinoPhotoError } from '@/shared/utils/bovinoPhoto';
 import {
   isOnline,
-  markOfflineQueueSynced,
   pendingOfflineCount,
   pendingOfflineItems,
+  sincronizar,
 } from '@/shared/services/offlineService';
 import {
   listarRecordatoriosVistos,
