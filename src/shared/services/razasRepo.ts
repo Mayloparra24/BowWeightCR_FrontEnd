@@ -1,20 +1,18 @@
 import apiClient from '@/shared/api/client';
-import { extractApiError } from '@/shared/api/errors';
 import type { ApiEnvelope, RazaDTO } from '@/shared/api/types';
 import { mapRaza } from '@/shared/api/mappers';
 import type { Raza } from '@/shared/types/domain';
-
-let cache: Raza[] | null = null;
+import { CACHE_KEYS, getList, setList } from '@/shared/services/catalogCache';
 
 export const razasRepo = {
-  async list(force = false): Promise<Raza[]> {
-    if (cache && !force) return cache;
+  async list(): Promise<Raza[]> {
     try {
       const { data } = await apiClient.get<ApiEnvelope<RazaDTO[]>>('/razas');
-      cache = data.data.map(mapRaza);
-      return cache;
-    } catch (error) {
-      throw new Error(extractApiError(error));
+      const mapped = data.data.map(mapRaza);
+      await setList(CACHE_KEYS.razas, mapped);
+      return mapped;
+    } catch {
+      return getList<Raza>(CACHE_KEYS.razas);
     }
   },
 };

@@ -3,6 +3,7 @@ import { extractApiError } from '@/shared/api/errors';
 import type { ApiEnvelope, FincaDTO } from '@/shared/api/types';
 import { mapFinca } from '@/shared/api/mappers';
 import type { Finca } from '@/shared/types/domain';
+import { CACHE_KEYS, getList, setList } from '@/shared/services/catalogCache';
 
 export interface FincaInput {
   name: string;
@@ -25,8 +26,14 @@ const toPayload = (input: FincaInput) => {
 
 export const fincasRepo = {
   async list(): Promise<Finca[]> {
-    const { data } = await apiClient.get<ApiEnvelope<FincaDTO[]>>('/fincas');
-    return data.data.map(mapFinca);
+    try {
+      const { data } = await apiClient.get<ApiEnvelope<FincaDTO[]>>('/fincas');
+      const mapped = data.data.map(mapFinca);
+      await setList(CACHE_KEYS.fincas, mapped);
+      return mapped;
+    } catch {
+      return getList<Finca>(CACHE_KEYS.fincas);
+    }
   },
 
   async get(id: string): Promise<Finca> {

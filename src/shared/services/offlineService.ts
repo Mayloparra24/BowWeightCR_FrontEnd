@@ -83,12 +83,43 @@ void readQueue().then((q) => {
   state.queue.push(...q);
 });
 
+// Pub/sub para eventos de red (additivo, queue behavior unchanged).
+const onlineHandlers = new Set<() => void>();
+const offlineHandlers = new Set<() => void>();
+
+export const onOnline = (handler: () => void): (() => void) => {
+  onlineHandlers.add(handler);
+  return () => {
+    onlineHandlers.delete(handler);
+  };
+};
+
+export const onOffline = (handler: () => void): (() => void) => {
+  offlineHandlers.add(handler);
+  return () => {
+    offlineHandlers.delete(handler);
+  };
+};
+
+const invokeOnlineHandlers = () => {
+  onlineHandlers.forEach((fn) => fn());
+};
+
+const invokeOfflineHandlers = () => {
+  offlineHandlers.forEach((fn) => fn());
+};
+
 // Listeners de red: en nativo usa @capacitor/network, en web los eventos window.
 const setupNetworkListeners = () => {
   if (isNative()) {
     Network.addListener('networkStatusChange', (status) => {
       state.online = status.connected;
-      if (status.connected) void sincronizar();
+      if (status.connected) {
+        void sincronizar();
+        invokeOnlineHandlers();
+      } else {
+        invokeOfflineHandlers();
+      }
     });
     void Network.getStatus().then((s) => {
       state.online = s.connected;
@@ -97,9 +128,11 @@ const setupNetworkListeners = () => {
     window.addEventListener('online', () => {
       state.online = true;
       void sincronizar();
+      invokeOnlineHandlers();
     });
     window.addEventListener('offline', () => {
       state.online = false;
+      invokeOfflineHandlers();
     });
   }
 };
