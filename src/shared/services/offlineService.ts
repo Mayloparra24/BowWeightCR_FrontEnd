@@ -81,6 +81,7 @@ const state = reactive<OfflineState>({
 // Carga la cola persistida sin bloquear el módulo.
 void readQueue().then((q) => {
   state.queue.push(...q);
+  if (state.online && q.length > 0) void sincronizar();
 });
 
 // Pub/sub para eventos de red (additivo, queue behavior unchanged).
@@ -123,6 +124,7 @@ const setupNetworkListeners = () => {
     });
     void Network.getStatus().then((s) => {
       state.online = s.connected;
+      if (s.connected) void sincronizar();
     });
   } else if (typeof window !== 'undefined') {
     window.addEventListener('online', () => {
@@ -146,30 +148,68 @@ export const isSincronizando = computed(() => state.sincronizando);
 
 const generarId = () => `offline-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
-const guardarFoto = async (dataUrl: string): Promise<string> => {
-  if (!isNative()) return dataUrl; // web: guardamos base64 en la cola
+interface StoredOfflinePhoto {
+  fotoPath?: string;
+  fotoBase64?: string;
+}
+
+const guardarFoto = async (dataUrl: string): Promise<StoredOfflinePhoto> => {
+  if (!isNative()) return { fotoBase64: dataUrl };
+
   try {
     const base64 = dataUrl.split(',')[1] ?? dataUrl;
     const name = `foto-${Date.now()}.jpg`;
-    const res = await Filesystem.writeFile({
-      path: `${PHOTO_DIR}/${name}`,
+    const path = `${PHOTO_DIR}/${name}`;
+
+    await Filesystem.writeFile({
+      path,
       data: base64,
       directory: Directory.Data,
+      recursive: true,
     });
-    return res.uri;
+
+    return { fotoPath: path };
   } catch {
-    return dataUrl;
+    return { fotoBase64: dataUrl };
   }
 };
 
 const leerFoto = async (item: OfflineQueueItem): Promise<Blob> => {
   if (item.fotoBase64) return dataUrlToBlob(item.fotoBase64);
+
+  // Compatibilidad con elementos antiguos: una version previa podia guardar
+  // el data URL dentro de fotoPath cuando fallaba Filesystem.writeFile.
+  if (item.fotoPath?.startsWith('data:')) {
+    return dataUrlToBlob(item.fotoPath);
+  }
+
   if (item.fotoPath && isNative()) {
-    const { data } = await Filesystem.readFile({ path: item.fotoPath });
+    const isAbsoluteUri = /^[a-z][a-z0-9+.-]*:\/\//i.test(item.fotoPath);
+    const { data } = await Filesystem.readFile({
+      path: item.fotoPath,
+      ...(isAbsoluteUri ? {} : { directory: Directory.Data }),
+    });
+
+    if (data instanceof Blob) return data;
+
     // data es base64 en nativo
     return dataUrlToBlob(`data:image/jpeg;base64,${data}`);
   }
   throw new Error('Foto no disponible.');
+};
+
+const eliminarFotoLocal = async (item: OfflineQueueItem): Promise<void> => {
+  if (!isNative() || !item.fotoPath || item.fotoPath.startsWith('data:')) return;
+
+  try {
+    const isAbsoluteUri = /^[a-z][a-z0-9+.-]*:\/\//i.test(item.fotoPath);
+    await Filesystem.deleteFile({
+      path: item.fotoPath,
+      ...(isAbsoluteUri ? {} : { directory: Directory.Data }),
+    });
+  } catch {
+    // La operacion ya se sincronizo. La limpieza no debe reencolarla.
+  }
 };
 
 export const enqueueEstimacion = async (input: {
@@ -178,7 +218,7 @@ export const enqueueEstimacion = async (input: {
   bovinoNombre: string;
   fotoDataUrl: string;
 }): Promise<OfflineQueueItem> => {
-  const fotoPath = await guardarFoto(input.fotoDataUrl);
+  const storedPhoto = await guardarFoto(input.fotoDataUrl);
   const item: OfflineQueueItem = {
     id: generarId(),
     type: 'estimacion',
@@ -189,8 +229,7 @@ export const enqueueEstimacion = async (input: {
     bovinoId: input.bovinoId,
     razaId: input.razaId,
     bovinoNombre: input.bovinoNombre,
-    fotoPath,
-    fotoBase64: isNative() ? undefined : input.fotoDataUrl,
+    ...storedPhoto,
   };
   state.queue.unshift(item);
   await persistQueue(state.queue);
@@ -231,6 +270,7 @@ const procesarItem = async (item: OfflineQueueItem): Promise<boolean> => {
         foto,
         modoOffline: false,
       });
+      await eliminarFotoLocal(item);
     } else {
       await pesajesRepo.createManual(item.bovinoId!, item.pesoKg!, item.notas);
     }
